@@ -7,9 +7,8 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "ENEM Practice",
+  title: "Questões ENEM",
   description: "Pratique questões do ENEM e acompanhe seu progresso",
-  generator: 'v0.dev'
 }
 
 export default function RootLayout({

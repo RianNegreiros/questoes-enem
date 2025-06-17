@@ -3,19 +3,75 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, XCircle } from "lucide-react"
+import { Question } from "@/app/types/question"
 
-interface Question {
-  id: number
-  subject: string
-  year: number
-  topic: string
-  question: string
-  options: string[]
-  correctAnswer: number
+interface AnswerCardProps {
+  question: Question
+  userAnswer: number
+}
+
+function AnswerCard({ question, userAnswer }: AnswerCardProps) {
+  const isCorrect = question.alternatives[userAnswer]?.isCorrect
+
+  const getAlternativeStyle = (index: number, isCorrect: boolean) => {
+    if (index === userAnswer) {
+      return isCorrect
+        ? "border-green-500 bg-green-50"
+        : "border-red-500 bg-red-50"
+    }
+    return isCorrect
+      ? "border-green-200 bg-green-50"
+      : "border-gray-200"
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {isCorrect ? (
+              <CheckCircle className="h-5 w-5 text-green-500" />
+            ) : (
+              <XCircle className="h-5 w-5 text-red-500" />
+            )}
+            <CardTitle className="text-lg">{question.title}</CardTitle>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">{question.discipline}</Badge>
+            <Badge variant="outline">{question.year}</Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {question.context && <p className="text-gray-600">{question.context}</p>}
+          {question.files?.map((file, index) => (
+            <img key={index} src={file} alt={`Imagem ${index + 1}`} className="max-w-full rounded-lg" />
+          ))}
+          <div className="space-y-2">
+            {question.alternatives.map((alternative, index) => (
+              <div
+                key={alternative.letter}
+                className={`p-3 rounded-lg border ${getAlternativeStyle(index, alternative.isCorrect)}`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full border border-gray-300">
+                    {alternative.letter}
+                  </div>
+                  <span>{alternative.text}</span>
+                  {alternative.isCorrect && <CheckCircle className="h-4 w-4 text-green-500 ml-auto" />}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 interface AnswerHistoryProps {
-  answers: Record<number, number>
+  answers: Record<string, number>
   questions: Question[]
 }
 
@@ -26,8 +82,7 @@ export function AnswerHistory({ answers, questions }: AnswerHistoryProps) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma questão respondida ainda</h3>
-          <p className="text-gray-600">Comece a praticar para ver seu histórico de respostas aqui.</p>
+          <p className="text-gray-600">Você ainda não respondeu nenhuma questão.</p>
         </CardContent>
       </Card>
     )
@@ -35,67 +90,13 @@ export function AnswerHistory({ answers, questions }: AnswerHistoryProps) {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Histórico de Respostas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-sm text-gray-600 mb-4">{answeredQuestions.length} questão(ões) respondida(s)</div>
-        </CardContent>
-      </Card>
-
-      {answeredQuestions.map((question) => {
-        const userAnswer = answers[question.id]
-        const isCorrect = userAnswer === question.correctAnswer
-
-        return (
-          <Card key={question.id}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="font-medium">Questão {question.id}</span>
-                    {isCorrect ? (
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                    ) : (
-                      <XCircle className="h-5 w-5 text-red-600" />
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Badge variant="outline">ENEM {question.year}</Badge>
-                    <Badge variant={isCorrect ? "default" : "destructive"}>{isCorrect ? "Correto" : "Incorreto"}</Badge>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              <div className="text-gray-900">{question.question}</div>
-
-              <div className="space-y-2">
-                <div className="text-sm font-medium text-gray-700">Sua resposta:</div>
-                <div
-                  className={`p-3 rounded-lg border-2 ${isCorrect ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"
-                    }`}
-                >
-                  <span className="font-medium">{String.fromCharCode(65 + userAnswer)})</span>
-                  {question.options[userAnswer]}
-                </div>
-              </div>
-
-              {!isCorrect && (
-                <div className="space-y-2">
-                  <div className="text-sm font-medium text-gray-700">Resposta correta:</div>
-                  <div className="p-3 rounded-lg border-2 border-green-200 bg-green-50">
-                    <span className="font-medium">{String.fromCharCode(65 + question.correctAnswer)})</span>
-                    {question.options[question.correctAnswer]}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )
-      })}
+      {answeredQuestions.map((question) => (
+        <AnswerCard
+          key={question.id}
+          question={question}
+          userAnswer={answers[question.id]}
+        />
+      ))}
     </div>
   )
 }
