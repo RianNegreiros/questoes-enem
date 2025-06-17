@@ -76,7 +76,7 @@ interface AnswerHistoryProps {
 }
 
 export function AnswerHistory({ answers, questions }: AnswerHistoryProps) {
-  const answeredQuestions = questions.filter((q) => answers[q.id] !== undefined)
+  const answeredQuestions = questions.filter((q) => answers[`${q.year}-${q.index}`] !== undefined)
 
   if (answeredQuestions.length === 0) {
     return (
@@ -92,9 +92,9 @@ export function AnswerHistory({ answers, questions }: AnswerHistoryProps) {
     <div className="space-y-4">
       {answeredQuestions.map((question) => (
         <AnswerCard
-          key={question.id}
+          key={`${question.year}-${question.index}`}
           question={question}
-          userAnswer={answers[question.id]}
+          userAnswer={answers[`${question.year}-${question.index}`]}
         />
       ))}
     </div>

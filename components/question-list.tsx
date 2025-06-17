@@ -67,12 +67,12 @@ export function QuestionList({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {questions.map((question) => (
           <QuestionCard
-            key={question.index}
+            key={`${question.year}-${question.index}`}
             question={question}
-            userAnswer={answers[question.id]}
-            showResult={showResults[question.id]}
-            onAnswer={(index) => onAnswer(question.id, index)}
-            onCheckAnswer={() => onCheckAnswer(question.id)}
+            userAnswer={answers[`${question.year}-${question.index}`]}
+            showResult={showResults[`${question.year}-${question.index}`]}
+            onAnswer={(index) => onAnswer(`${question.year}-${question.index}`, index)}
+            onCheckAnswer={() => onCheckAnswer(`${question.year}-${question.index}`)}
           />
         ))}
       </div>

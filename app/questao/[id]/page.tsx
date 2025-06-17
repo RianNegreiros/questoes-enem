@@ -9,6 +9,7 @@ import { ShareButton } from "@/components/share-button"
 import { ArrowLeft, CheckCircle, XCircle } from "lucide-react"
 import { getQuestionById } from "@/app/services/enem-api"
 import { Question } from "@/app/types/question"
+import ReactMarkdown from "react-markdown"
 
 export default function QuestionPage() {
   const params = useParams()
@@ -71,12 +72,21 @@ export default function QuestionPage() {
               <Badge variant="outline">{question.discipline}</Badge>
               <Badge variant="outline">{question.year}</Badge>
             </div>
-            <ShareButton url={`/questao/${question.id}`} title={question.title} />
+            <ShareButton
+              url={`/questao/${question.year}-${question.index}`}
+              title={question.title}
+            />
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <p className="text-lg font-medium">{question.title}</p>
-              {question.context && <p className="text-gray-600">{question.context}</p>}
+              <div className="text-lg font-medium">
+                <ReactMarkdown>{question.title}</ReactMarkdown>
+              </div>
+              {question.context && (
+                <div className="text-gray-600">
+                  <ReactMarkdown>{question.context}</ReactMarkdown>
+                </div>
+              )}
               {question.files?.map((file: string, index: number) => (
                 <img key={index} src={file} alt={`Imagem ${index + 1}`} className="max-w-full rounded-lg" />
               ))}
@@ -84,7 +94,7 @@ export default function QuestionPage() {
               <div className="space-y-2">
                 {question.alternatives.map((alternative: { letter: string; text: string; isCorrect: boolean }, index: number) => (
                   <button
-                    key={`${question.id}-alternative-${alternative.letter}`}
+                    key={`${question.year}-${question.index}-alternative-${alternative.letter}`}
                     onClick={() => !showResult && setSelectedAnswer(index)}
                     disabled={showResult}
                     className={`w-full flex items-center gap-2 p-3 rounded-lg border transition-colors ${selectedAnswer === index

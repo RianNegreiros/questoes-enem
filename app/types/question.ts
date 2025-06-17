@@ -1,5 +1,4 @@
 export interface Question {
-  id: string
   title: string
   index: number
   discipline: string

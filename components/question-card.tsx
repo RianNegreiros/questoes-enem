@@ -7,6 +7,7 @@ import { CheckCircle, XCircle, ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { ShareButton } from "@/components/share-button"
 import { Question } from "@/app/types/question"
+import ReactMarkdown from "react-markdown"
 
 interface QuestionCardProps {
   question: Question
@@ -94,8 +95,14 @@ export function QuestionCard({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <p className="text-lg font-medium">{question.title}</p>
-          {question.context && <p className="text-gray-600">{question.context}</p>}
+          <div className="text-lg font-medium">
+            {question.title}
+          </div>
+          {question.context && (
+            <div className="text-gray-600">
+              <ReactMarkdown>{question.context}</ReactMarkdown>
+            </div>
+          )}
           {question.files?.map((file, index) => (
             <img key={`file-${index}`} src={file} alt={`Imagem ${index + 1}`} className="max-w-full rounded-lg" />
           ))}
@@ -103,7 +110,7 @@ export function QuestionCard({
           <div className="space-y-2">
             {question.alternatives.map((alternative, index) => (
               <AlternativeButton
-                key={`${question.id}-alternative-${alternative.letter}`}
+                key={`${question.year}-${question.index}-alternative-${alternative.letter}`}
                 letter={alternative.letter}
                 text={alternative.text}
                 isSelected={userAnswer === index}
