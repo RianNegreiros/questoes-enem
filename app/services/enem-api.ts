@@ -1,5 +1,3 @@
-import { Question } from "@/types/question"
-
 const API_BASE_URL = "https://api.enem.dev/v1"
 
 export async function getExams() {
@@ -23,9 +21,9 @@ export async function getExamByYear(year: string) {
   return response.json()
 }
 
-export async function getQuestions(year: string) {
+export async function getQuestions(year: string, limit: number = 10, offset: number = 0) {
   try {
-    const response = await fetch(`${API_BASE_URL}/exams/${year}/questions`)
+    const response = await fetch(`${API_BASE_URL}/exams/${year}/questions?limit=${limit}&offset=${offset}`)
     if (!response.ok) {
       throw new Error("Failed to fetch questions")
     }

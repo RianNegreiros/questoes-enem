@@ -21,6 +21,7 @@ export default function EnemPractice() {
   const [years, setYears] = useState<string[]>([])
   const [selectedYear, setSelectedYear] = useState<string>("")
   const [isLoading, setIsLoading] = useState(true)
+  const [totalQuestions, setTotalQuestions] = useState(0)
 
   useEffect(() => {
     async function loadExams() {
@@ -39,13 +40,19 @@ export default function EnemPractice() {
   }, [])
 
   useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedYear])
+
+  useEffect(() => {
     async function loadQuestions() {
       if (!selectedYear) return
 
       setIsLoading(true)
       try {
-        const data = await getQuestions(selectedYear)
+        const offset = (currentPage - 1) * questionsPerPage
+        const data = await getQuestions(selectedYear, questionsPerPage, offset)
         setQuestions(data.questions)
+        setTotalQuestions(data.metadata?.total || 0)
       } catch (error) {
         console.error("Failed to load questions:", error)
       } finally {
@@ -53,14 +60,10 @@ export default function EnemPractice() {
       }
     }
     loadQuestions()
-  }, [selectedYear])
+  }, [selectedYear, currentPage])
 
   // Pagination
-  const totalPages = Math.ceil(questions.length / questionsPerPage)
-  const paginatedQuestions = questions.slice(
-    (currentPage - 1) * questionsPerPage,
-    currentPage * questionsPerPage,
-  )
+  const totalPages = Math.ceil(totalQuestions / questionsPerPage)
 
   const handleAnswer = (questionId: string, answerIndex: number) => {
     setAnswers((prev) => ({ ...prev, [questionId]: answerIndex }))
@@ -82,7 +85,7 @@ export default function EnemPractice() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="practice">
               <BookOpen className="h-4 w-4 mr-2" />
               Praticar
@@ -90,10 +93,6 @@ export default function EnemPractice() {
             <TabsTrigger value="progress">
               <BarChart3 className="h-4 w-4 mr-2" />
               Progresso
-            </TabsTrigger>
-            <TabsTrigger value="ranking">
-              <Trophy className="h-4 w-4 mr-2" />
-              Ranking
             </TabsTrigger>
             <TabsTrigger value="history">
               <History className="h-4 w-4 mr-2" />
@@ -122,7 +121,7 @@ export default function EnemPractice() {
                 <div className="text-center py-8">Carregando questões...</div>
               ) : (
                 <QuestionList
-                  questions={paginatedQuestions}
+                  questions={questions}
                   answers={answers}
                   showResults={showResult}
                   onAnswer={handleAnswer}
@@ -144,18 +143,6 @@ export default function EnemPractice() {
                   <LogIn className="h-4 w-4 mr-2" />
                   Fazer Login
                 </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="ranking">
-            <Card>
-              <CardContent className="p-8 text-center">
-                <Trophy className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Ranking em Desenvolvimento</h3>
-                <p className="text-gray-600">
-                  Em breve você poderá ver o ranking dos melhores estudantes!
-                </p>
               </CardContent>
             </Card>
           </TabsContent>

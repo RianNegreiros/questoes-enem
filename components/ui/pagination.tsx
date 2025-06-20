@@ -70,7 +70,7 @@ const PaginationPrevious = ({
     {...props}
   >
     <ChevronLeft className="h-4 w-4" />
-    <span>Previous</span>
+    <span>Anterior</span>
   </PaginationLink>
 )
 PaginationPrevious.displayName = "PaginationPrevious"
@@ -85,7 +85,7 @@ const PaginationNext = ({
     className={cn("gap-1 pr-2.5", className)}
     {...props}
   >
-    <span>Next</span>
+    <span>Próxima</span>
     <ChevronRight className="h-4 w-4" />
   </PaginationLink>
 )
@@ -105,6 +105,76 @@ const PaginationEllipsis = ({
   </span>
 )
 PaginationEllipsis.displayName = "PaginationEllipsis"
+
+interface PaginationControlsProps {
+  currentPage: number
+  totalPages: number
+  onPageChange: (page: number) => void
+}
+
+export function PaginationControls({ currentPage, totalPages, onPageChange }: PaginationControlsProps) {
+  if (totalPages <= 1) return null
+
+  return (
+    <Pagination>
+      <PaginationContent>
+        <PaginationItem>
+          <PaginationPrevious
+            onClick={() => onPageChange(currentPage - 1)}
+            aria-disabled={currentPage === 1}
+            tabIndex={currentPage === 1 ? -1 : 0}
+            style={{ pointerEvents: currentPage === 1 ? 'none' : undefined, opacity: currentPage === 1 ? 0.5 : 1 }}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span>Anterior</span>
+          </PaginationPrevious>
+        </PaginationItem>
+        {Array.from({ length: totalPages }).map((_, idx) => {
+          const page = idx + 1
+          if (
+            page === 1 ||
+            page === totalPages ||
+            Math.abs(page - currentPage) <= 1
+          ) {
+            return (
+              <PaginationItem key={page}>
+                <PaginationLink
+                  isActive={page === currentPage}
+                  onClick={() => onPageChange(page)}
+                  aria-current={page === currentPage ? 'page' : undefined}
+                >
+                  {page}
+                </PaginationLink>
+              </PaginationItem>
+            )
+          }
+          if (
+            (page === currentPage - 2 && page > 1) ||
+            (page === currentPage + 2 && page < totalPages)
+          ) {
+            return (
+              <PaginationItem key={`ellipsis-${page}`}>
+                <PaginationEllipsis />
+              </PaginationItem>
+            )
+          }
+          return null
+        })}
+        <PaginationItem>
+          <PaginationNext
+            onClick={() => onPageChange(currentPage + 1)}
+            aria-disabled={currentPage === totalPages}
+            tabIndex={currentPage === totalPages ? -1 : 0}
+            style={{ pointerEvents: currentPage === totalPages ? 'none' : undefined, opacity: currentPage === totalPages ? 0.5 : 1 }}
+          >
+            <span>Próxima</span>
+            <ChevronRight className="h-4 w-4" />
+          </PaginationNext>
+        </PaginationItem>
+      </PaginationContent>
+    </Pagination>
+  )
+}
 
 export {
   Pagination,

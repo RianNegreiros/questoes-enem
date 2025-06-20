@@ -1,45 +1,16 @@
 "use client"
 
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { QuestionCard } from "@/components/question-card"
 import { Question } from "@/app/types/question"
-import Link from "next/link"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-
-interface PaginationControlsProps {
-  currentPage: number
-  totalPages: number
-  onPageChange: (page: number) => void
-}
-
-function PaginationControls({ currentPage, totalPages, onPageChange }: PaginationControlsProps) {
-  if (totalPages <= 1) return null
-
-  return (
-    <div className="flex items-center justify-center gap-2">
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-      <span className="text-sm text-gray-600">
-        Página {currentPage} de {totalPages}
-      </span>
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-      >
-        <ChevronRight className="h-4 w-4" />
-      </Button>
-    </div>
-  )
-}
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+  PaginationLink,
+  PaginationEllipsis,
+} from "@/components/ui/pagination"
 
 interface QuestionListProps {
   questions: Question[]
@@ -77,11 +48,59 @@ export function QuestionList({
         ))}
       </div>
 
-      <PaginationControls
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={onPageChange}
-      />
+      {totalPages > 1 && (
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => onPageChange(currentPage - 1)}
+                aria-disabled={currentPage === 1}
+                tabIndex={currentPage === 1 ? -1 : 0}
+                style={{ pointerEvents: currentPage === 1 ? 'none' : undefined, opacity: currentPage === 1 ? 0.5 : 1 }}
+              />
+            </PaginationItem>
+            {Array.from({ length: totalPages }).map((_, idx) => {
+              const page = idx + 1
+              if (
+                page === 1 ||
+                page === totalPages ||
+                Math.abs(page - currentPage) <= 1
+              ) {
+                return (
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      isActive={page === currentPage}
+                      onClick={() => onPageChange(page)}
+                      aria-current={page === currentPage ? 'page' : undefined}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
+                )
+              }
+              if (
+                (page === currentPage - 2 && page > 1) ||
+                (page === currentPage + 2 && page < totalPages)
+              ) {
+                return (
+                  <PaginationItem key={`ellipsis-${page}`}>
+                    <PaginationEllipsis />
+                  </PaginationItem>
+                )
+              }
+              return null
+            })}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => onPageChange(currentPage + 1)}
+                aria-disabled={currentPage === totalPages}
+                tabIndex={currentPage === totalPages ? -1 : 0}
+                style={{ pointerEvents: currentPage === totalPages ? 'none' : undefined, opacity: currentPage === totalPages ? 0.5 : 1 }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   )
 }
