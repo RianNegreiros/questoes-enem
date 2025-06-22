@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Exam } from './types/exam'
 
 export default function EnemPractice() {
   const [answers, setAnswers] = useState<Record<string, number>>({})
@@ -29,7 +30,7 @@ export default function EnemPractice() {
       try {
         const exams = await getExams()
         const availableYears = exams
-          .map((exam: any) => exam.year.toString())
+          .map((exam: Exam) => exam.year.toString())
           .sort((a: string, b: string) => Number(b) - Number(a))
         setYears(availableYears)
         if (availableYears.length > 0) {
@@ -65,7 +66,6 @@ export default function EnemPractice() {
     loadQuestions()
   }, [selectedYear, currentPage])
 
-  // Pagination
   const totalPages = Math.ceil(totalQuestions / questionsPerPage)
 
   const handleAnswer = (questionId: string, answerIndex: number) => {
