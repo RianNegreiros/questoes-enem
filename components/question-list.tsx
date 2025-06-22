@@ -1,16 +1,16 @@
-"use client"
+'use client'
 
-import { QuestionCard } from "@/components/question-card"
-import { Question } from "@/app/types/question"
+import { Question } from '@/app/types/question'
+import { QuestionCard } from '@/components/question-card'
 import {
   Pagination,
   PaginationContent,
-  PaginationItem,
-  PaginationPrevious,
-  PaginationNext,
-  PaginationLink,
   PaginationEllipsis,
-} from "@/components/ui/pagination"
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 
 interface QuestionListProps {
   questions: Question[]
@@ -56,16 +56,15 @@ export function QuestionList({
                 onClick={() => onPageChange(currentPage - 1)}
                 aria-disabled={currentPage === 1}
                 tabIndex={currentPage === 1 ? -1 : 0}
-                style={{ pointerEvents: currentPage === 1 ? 'none' : undefined, opacity: currentPage === 1 ? 0.5 : 1 }}
+                style={{
+                  pointerEvents: currentPage === 1 ? 'none' : undefined,
+                  opacity: currentPage === 1 ? 0.5 : 1,
+                }}
               />
             </PaginationItem>
             {Array.from({ length: totalPages }).map((_, idx) => {
               const page = idx + 1
-              if (
-                page === 1 ||
-                page === totalPages ||
-                Math.abs(page - currentPage) <= 1
-              ) {
+              if (page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1) {
                 return (
                   <PaginationItem key={page}>
                     <PaginationLink
@@ -78,10 +77,7 @@ export function QuestionList({
                   </PaginationItem>
                 )
               }
-              if (
-                (page === currentPage - 2 && page > 1) ||
-                (page === currentPage + 2 && page < totalPages)
-              ) {
+              if ((page === currentPage - 2 && page > 1) || (page === currentPage + 2 && page < totalPages)) {
                 return (
                   <PaginationItem key={`ellipsis-${page}`}>
                     <PaginationEllipsis />
@@ -95,7 +91,10 @@ export function QuestionList({
                 onClick={() => onPageChange(currentPage + 1)}
                 aria-disabled={currentPage === totalPages}
                 tabIndex={currentPage === totalPages ? -1 : 0}
-                style={{ pointerEvents: currentPage === totalPages ? 'none' : undefined, opacity: currentPage === totalPages ? 0.5 : 1 }}
+                style={{
+                  pointerEvents: currentPage === totalPages ? 'none' : undefined,
+                  opacity: currentPage === totalPages ? 0.5 : 1,
+                }}
               />
             </PaginationItem>
           </PaginationContent>

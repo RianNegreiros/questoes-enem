@@ -1,25 +1,26 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { useState, useMemo, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { QuestionList } from "@/components/question-list"
-import { BookOpen, BarChart3, History, Trophy, Filter, LogIn } from "lucide-react"
-import { getExams, getQuestions } from "@/app/services/enem-api"
-import { Question } from "@/app/types/question"
+import type React from 'react'
+import { useEffect, useState } from 'react'
+import { BarChart3, BookOpen, History, LogIn } from 'lucide-react'
+
+import { getExams, getQuestions } from '@/app/services/enem-api'
+import { Question } from '@/app/types/question'
+import { QuestionList } from '@/components/question-list'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export default function EnemPractice() {
   const [answers, setAnswers] = useState<Record<string, number>>({})
   const [showResult, setShowResult] = useState<Record<string, boolean>>({})
-  const [activeTab, setActiveTab] = useState("practice")
+  const [activeTab, setActiveTab] = useState('practice')
   const [currentPage, setCurrentPage] = useState(1)
   const questionsPerPage = 10
   const [questions, setQuestions] = useState<Question[]>([])
   const [years, setYears] = useState<string[]>([])
-  const [selectedYear, setSelectedYear] = useState<string>("")
+  const [selectedYear, setSelectedYear] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [totalQuestions, setTotalQuestions] = useState(0)
 
@@ -27,13 +28,15 @@ export default function EnemPractice() {
     async function loadExams() {
       try {
         const exams = await getExams()
-        const availableYears = exams.map((exam: any) => exam.year.toString()).sort((a: string, b: string) => Number(b) - Number(a))
+        const availableYears = exams
+          .map((exam: any) => exam.year.toString())
+          .sort((a: string, b: string) => Number(b) - Number(a))
         setYears(availableYears)
         if (availableYears.length > 0) {
           setSelectedYear(availableYears[0])
         }
       } catch (error) {
-        console.error("Failed to load exams:", error)
+        console.error('Failed to load exams:', error)
       }
     }
     loadExams()
@@ -54,7 +57,7 @@ export default function EnemPractice() {
         setQuestions(data.questions)
         setTotalQuestions(data.metadata?.total || 0)
       } catch (error) {
-        console.error("Failed to load questions:", error)
+        console.error('Failed to load questions:', error)
       } finally {
         setIsLoading(false)
       }

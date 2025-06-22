@@ -1,9 +1,10 @@
-"use client"
+'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { CheckCircle, XCircle } from "lucide-react"
-import { Question } from "@/app/types/question"
+import { CheckCircle, XCircle } from 'lucide-react'
+
+import { Question } from '@/app/types/question'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface AnswerCardProps {
   question: Question
@@ -15,13 +16,9 @@ function AnswerCard({ question, userAnswer }: AnswerCardProps) {
 
   const getAlternativeStyle = (index: number, isCorrect: boolean) => {
     if (index === userAnswer) {
-      return isCorrect
-        ? "border-green-500 bg-green-50"
-        : "border-red-500 bg-red-50"
+      return isCorrect ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'
     }
-    return isCorrect
-      ? "border-green-200 bg-green-50"
-      : "border-gray-200"
+    return isCorrect ? 'border-green-200 bg-green-50' : 'border-gray-200'
   }
 
   return (

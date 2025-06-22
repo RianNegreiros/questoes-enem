@@ -1,7 +1,8 @@
-"use client"
+'use client'
 
-import { Button } from "@/components/ui/button"
-import { Share2 } from "lucide-react"
+import { Share2 } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
 
 interface ShareButtonProps {
   url: string
@@ -17,12 +18,12 @@ export function ShareButton({ url, title }: ShareButtonProps) {
           url: url,
         })
       } catch (error) {
-        console.error("Error sharing:", error)
+        console.error('Error sharing:', error)
       }
     } else {
       // Fallback for browsers that don't support the Web Share API
       navigator.clipboard.writeText(url)
-      alert("Link copiado para a área de transferência!")
+      alert('Link copiado para a área de transferência!')
     }
   }
 

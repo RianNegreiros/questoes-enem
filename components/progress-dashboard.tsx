@@ -1,9 +1,10 @@
-"use client"
+'use client'
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import { BarChart3, TrendingUp, Target, LucideIcon } from "lucide-react"
+import { BarChart3, LucideIcon, Target, TrendingUp } from 'lucide-react'
+
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
 
 interface Stats {
   totalQuestions: number
@@ -69,24 +70,9 @@ export function ProgressDashboard({ stats }: ProgressDashboardProps) {
           label="Questões Respondidas"
           iconColor="text-blue-600"
         />
-        <StatCard
-          icon={Target}
-          value={`${stats.accuracy}%`}
-          label="Taxa de Acerto"
-          iconColor="text-green-600"
-        />
-        <StatCard
-          icon={TrendingUp}
-          value={stats.streak}
-          label="Sequência Atual"
-          iconColor="text-purple-600"
-        />
-        <StatCard
-          icon={BarChart3}
-          value={stats.correctAnswers}
-          label="Acertos Totais"
-          iconColor="text-orange-600"
-        />
+        <StatCard icon={Target} value={`${stats.accuracy}%`} label="Taxa de Acerto" iconColor="text-green-600" />
+        <StatCard icon={TrendingUp} value={stats.streak} label="Sequência Atual" iconColor="text-purple-600" />
+        <StatCard icon={BarChart3} value={stats.correctAnswers} label="Acertos Totais" iconColor="text-orange-600" />
       </div>
 
       <Card>
@@ -96,11 +82,7 @@ export function ProgressDashboard({ stats }: ProgressDashboardProps) {
         <CardContent>
           <div className="space-y-4">
             {Object.entries(stats.subjects).map(([subject, data]) => (
-              <SubjectProgress
-                key={subject}
-                subject={subject}
-                data={data}
-              />
+              <SubjectProgress key={subject} subject={subject} data={data} />
             ))}
           </div>
         </CardContent>

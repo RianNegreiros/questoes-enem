@@ -14,4 +14,4 @@ export interface Question {
     file?: string
     isCorrect: boolean
   }[]
-} 
+}
