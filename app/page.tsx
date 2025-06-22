@@ -1,16 +1,17 @@
 'use client'
 
-import type React from 'react'
 import { useEffect, useState } from 'react'
 import { BarChart3, BookOpen, History, LogIn } from 'lucide-react'
 
 import { getExams, getQuestions } from '@/app/services/enem-api'
-import { Question } from '@/app/types/question'
+import type { Question } from '@/app/types/question'
+import { AuthDialog } from '@/components/auth-dialog'
 import { QuestionList } from '@/components/question-list'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import type { Exam } from './types/exam'
 
 export default function EnemPractice() {
   const [answers, setAnswers] = useState<Record<string, number>>({})
@@ -23,13 +24,14 @@ export default function EnemPractice() {
   const [selectedYear, setSelectedYear] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [totalQuestions, setTotalQuestions] = useState(0)
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false)
 
   useEffect(() => {
     async function loadExams() {
       try {
         const exams = await getExams()
         const availableYears = exams
-          .map((exam: any) => exam.year.toString())
+          .map((exam: Exam) => exam.year.toString())
           .sort((a: string, b: string) => Number(b) - Number(a))
         setYears(availableYears)
         if (availableYears.length > 0) {
@@ -65,7 +67,6 @@ export default function EnemPractice() {
     loadQuestions()
   }, [selectedYear, currentPage])
 
-  // Pagination
   const totalPages = Math.ceil(totalQuestions / questionsPerPage)
 
   const handleAnswer = (questionId: string, answerIndex: number) => {
@@ -76,12 +77,18 @@ export default function EnemPractice() {
     setShowResult((prev) => ({ ...prev, [questionId]: true }))
   }
 
+  const handleAuthSuccess = () => {
+    setIsAuthDialogOpen(false)
+    // Handle successful authentication here
+    console.log('Authentication successful')
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col gap-8">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">Questões ENEM</h1>
-          <Button>
+          <Button onClick={() => setIsAuthDialogOpen(true)}>
             <LogIn className="h-4 w-4 mr-2" />
             Entrar
           </Button>
@@ -142,7 +149,7 @@ export default function EnemPractice() {
               <CardContent className="p-8 text-center">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Acesso Restrito</h3>
                 <p className="text-gray-600 mb-4">Faça login para acessar seu progresso e histórico de respostas.</p>
-                <Button>
+                <Button onClick={() => setIsAuthDialogOpen(true)}>
                   <LogIn className="h-4 w-4 mr-2" />
                   Fazer Login
                 </Button>
@@ -155,7 +162,7 @@ export default function EnemPractice() {
               <CardContent className="p-8 text-center">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Acesso Restrito</h3>
                 <p className="text-gray-600 mb-4">Faça login para acessar seu progresso e histórico de respostas.</p>
-                <Button>
+                <Button onClick={() => setIsAuthDialogOpen(true)}>
                   <LogIn className="h-4 w-4 mr-2" />
                   Fazer Login
                 </Button>
@@ -164,6 +171,8 @@ export default function EnemPractice() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <AuthDialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen} onAuthSuccess={handleAuthSuccess} />
     </div>
   )
 }
