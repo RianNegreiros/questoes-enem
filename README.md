@@ -21,6 +21,8 @@ Crie um arquivo `.env.local` na raiz do projeto com o seguinte conteúdo:
 ```env
 NEXT_PUBLIC_API_URL=https://api.enem.dev/v1
 
+DATABASE_URL=
+
 BETTER_AUTH_SECRET= # Sua chave secreta do Better Auth
 BETTER_AUTH_URL=http://localhost:3000
 
