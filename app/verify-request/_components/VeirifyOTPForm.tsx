@@ -39,11 +39,11 @@ export function VerifyOTPForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-            <Mail className="h-6 w-6 text-blue-600" />
+          <div className="mx-auto w-12 h-12 bg-info/10 rounded-full flex items-center justify-center mb-4">
+            <Mail className="h-6 w-6 text-info" />
           </div>
           <CardTitle className="text-2xl">Verifique seu e-mail</CardTitle>
           <CardDescription>
@@ -67,7 +67,7 @@ export function VerifyOTPForm() {
                 <InputOTPSlot index={5} />
               </InputOTPGroup>
             </InputOTP>
-            <p className="text-xs text-gray-500 text-center p-2">
+            <p className="text-xs text-muted-foreground text-center p-2">
               Digite o código de 6 dígitos enviado para o seu e-mail
             </p>
           </div>

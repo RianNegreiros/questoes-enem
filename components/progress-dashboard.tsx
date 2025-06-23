@@ -27,8 +27,8 @@ function StatCard({ icon: Icon, value, label, iconColor }: StatCardProps) {
     <Card>
       <CardContent className="p-4 text-center">
         <Icon className={`h-8 w-8 ${iconColor} mx-auto mb-2`} />
-        <div className="text-2xl font-bold text-gray-900">{value}</div>
-        <div className="text-sm text-gray-600">{label}</div>
+        <div className="text-2xl font-bold text-foreground">{value}</div>
+        <div className="text-sm text-muted-foreground">{label}</div>
       </CardContent>
     </Card>
   )
@@ -49,7 +49,7 @@ function SubjectProgress({ subject, data }: SubjectProgressProps) {
             {data.correct}/{data.total} acertos
           </Badge>
         </div>
-        <span className="text-sm text-gray-600">{data.accuracy}%</span>
+        <span className="text-sm text-muted-foreground">{data.accuracy}%</span>
       </div>
       <Progress value={data.accuracy} className="h-2" />
     </div>
@@ -64,15 +64,10 @@ export function ProgressDashboard({ stats }: ProgressDashboardProps) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard
-          icon={BarChart3}
-          value={stats.answeredQuestions}
-          label="Questões Respondidas"
-          iconColor="text-blue-600"
-        />
-        <StatCard icon={Target} value={`${stats.accuracy}%`} label="Taxa de Acerto" iconColor="text-green-600" />
-        <StatCard icon={TrendingUp} value={stats.streak} label="Sequência Atual" iconColor="text-purple-600" />
-        <StatCard icon={BarChart3} value={stats.correctAnswers} label="Acertos Totais" iconColor="text-orange-600" />
+        <StatCard icon={BarChart3} value={stats.answeredQuestions} label="Questões Respondidas" iconColor="text-info" />
+        <StatCard icon={Target} value={`${stats.accuracy}%`} label="Taxa de Acerto" iconColor="text-success" />
+        <StatCard icon={TrendingUp} value={stats.streak} label="Sequência Atual" iconColor="text-warning" />
+        <StatCard icon={BarChart3} value={stats.correctAnswers} label="Acertos Totais" iconColor="text-error" />
       </div>
 
       <Card>

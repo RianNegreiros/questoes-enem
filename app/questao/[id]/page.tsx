@@ -81,14 +81,14 @@ export default function QuestionPage() {
                 <ReactMarkdown>{question.title}</ReactMarkdown>
               </div>
               {question.context && (
-                <div className="text-gray-600">
+                <div className="text-muted-foreground">
                   <ReactMarkdown>{question.context}</ReactMarkdown>
                 </div>
               )}
               {question.files?.map((file: string, index: number) => (
                 <img key={index} src={file} alt={`Imagem ${index + 1}`} className="max-w-full rounded-lg" />
               ))}
-              <p className="text-sm text-gray-500">{question.alternativesIntroduction}</p>
+              <p className="text-sm text-muted-foreground">{question.alternativesIntroduction}</p>
               <div className="space-y-2">
                 {question.alternatives.map(
                   (
@@ -103,22 +103,19 @@ export default function QuestionPage() {
                       key={`${question.year}-${question.index}-alternative-${alternative.letter}`}
                       onClick={() => !showResult && setSelectedAnswer(index)}
                       disabled={showResult}
-                      className={`w-full flex items-center gap-2 p-3 rounded-lg border transition-colors ${
-                        selectedAnswer === index
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-blue-200'
-                      }`}
+                      className={`w-full flex items-center gap-2 p-3 rounded-lg border transition-colors ${selectedAnswer === index ? 'border-info bg-info/10' : 'border-input hover:border-info'
+                        }`}
                     >
-                      <div className="flex items-center justify-center w-6 h-6 rounded-full border border-gray-300">
+                      <div className="flex items-center justify-center w-6 h-6 rounded-full border border-input">
                         {alternative.letter}
                       </div>
                       <span className="flex-1 text-left">{alternative.text}</span>
                       {showResult && (
                         <>
                           {alternative.isCorrect ? (
-                            <CheckCircle className="h-5 w-5 text-green-500" />
+                            <CheckCircle className="h-5 w-5 text-success" />
                           ) : selectedAnswer === index ? (
-                            <XCircle className="h-5 w-5 text-red-500" />
+                            <XCircle className="h-5 w-5 text-error" />
                           ) : null}
                         </>
                       )}
@@ -139,9 +136,9 @@ export default function QuestionPage() {
             {showResult && (
               <div className="flex items-center gap-2">
                 {question.alternatives[selectedAnswer!]?.isCorrect ? (
-                  <span className="text-green-600">Resposta correta!</span>
+                  <span className="text-success">Resposta correta!</span>
                 ) : (
-                  <span className="text-red-600">Resposta incorreta</span>
+                  <span className="text-error">Resposta incorreta</span>
                 )}
               </div>
             )}

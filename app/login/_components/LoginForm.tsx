@@ -52,14 +52,16 @@ export function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md relative">
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="w-full max-w-md p-8 bg-card rounded-lg shadow-md relative">
         <Button variant="ghost" className="absolute left-4 top-4 flex items-center" onClick={() => router.push('/')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar para a página principal
         </Button>
         <h1 className="text-2xl font-bold mb-2 text-center mt-8">Acesse sua conta</h1>
-        <p className="text-gray-600 mb-6 text-center">Entre ou crie uma conta para acessar todas as funcionalidades</p>
+        <p className="text-muted-foreground mb-6 text-center">
+          Entre ou crie uma conta para acessar todas as funcionalidades
+        </p>
         <div className="space-y-3">
           <Button
             type="button"
@@ -87,7 +89,7 @@ export function LoginForm() {
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white p-2 text-muted-foreground">Ou continue com email</span>
+            <span className="bg-card p-2 text-muted-foreground">Ou continue com email</span>
           </div>
         </div>
         <div className="space-y-2">

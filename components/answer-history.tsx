@@ -16,9 +16,9 @@ function AnswerCard({ question, userAnswer }: AnswerCardProps) {
 
   const getAlternativeStyle = (index: number, isCorrect: boolean) => {
     if (index === userAnswer) {
-      return isCorrect ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'
+      return isCorrect ? 'border-success bg-success/10' : 'border-error bg-error/10'
     }
-    return isCorrect ? 'border-green-200 bg-green-50' : 'border-gray-200'
+    return isCorrect ? 'border-success/50 bg-success/5' : 'border-input'
   }
 
   return (
@@ -26,11 +26,7 @@ function AnswerCard({ question, userAnswer }: AnswerCardProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {isCorrect ? (
-              <CheckCircle className="h-5 w-5 text-green-500" />
-            ) : (
-              <XCircle className="h-5 w-5 text-red-500" />
-            )}
+            {isCorrect ? <CheckCircle className="h-5 w-5 text-success" /> : <XCircle className="h-5 w-5 text-error" />}
             <CardTitle className="text-lg">{question.title}</CardTitle>
           </div>
           <div className="flex items-center gap-2">
@@ -41,7 +37,7 @@ function AnswerCard({ question, userAnswer }: AnswerCardProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {question.context && <p className="text-gray-600">{question.context}</p>}
+          {question.context && <p className="text-muted-foreground">{question.context}</p>}
           {question.files?.map((file, index) => (
             <img key={index} src={file} alt={`Imagem ${index + 1}`} className="max-w-full rounded-lg" />
           ))}
@@ -52,11 +48,11 @@ function AnswerCard({ question, userAnswer }: AnswerCardProps) {
                 className={`p-3 rounded-lg border ${getAlternativeStyle(index, alternative.isCorrect)}`}
               >
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center justify-center w-6 h-6 rounded-full border border-gray-300">
+                  <div className="flex items-center justify-center w-6 h-6 rounded-full border border-input">
                     {alternative.letter}
                   </div>
                   <span>{alternative.text}</span>
-                  {alternative.isCorrect && <CheckCircle className="h-4 w-4 text-green-500 ml-auto" />}
+                  {alternative.isCorrect && <CheckCircle className="h-4 w-4 text-success ml-auto" />}
                 </div>
               </div>
             ))}
@@ -79,7 +75,7 @@ export function AnswerHistory({ answers, questions }: AnswerHistoryProps) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
-          <p className="text-gray-600">Você ainda não respondeu nenhuma questão.</p>
+          <p className="text-muted-foreground">Você ainda não respondeu nenhuma questão.</p>
         </CardContent>
       </Card>
     )

@@ -32,18 +32,17 @@ function AlternativeButton({ letter, text, isSelected, isCorrect, showResult, on
     <button
       onClick={onClick}
       disabled={showResult}
-      className={`w-full flex items-center gap-2 p-3 rounded-lg border transition-colors ${
-        isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-200'
-      }`}
+      className={`w-full flex items-center gap-2 p-3 rounded-lg border transition-colors ${isSelected ? 'border-info bg-info/10' : 'border-input hover:border-info'
+        }`}
     >
-      <div className="flex items-center justify-center w-6 h-6 rounded-full border border-gray-300">{letter}</div>
+      <div className="flex items-center justify-center w-6 h-6 rounded-full border border-input">{letter}</div>
       <span className="flex-1 text-left">{text}</span>
       {showResult && (
         <>
           {isCorrect ? (
-            <CheckCircle className="h-5 w-5 text-green-500" />
+            <CheckCircle className="h-5 w-5 text-success" />
           ) : isSelected ? (
-            <XCircle className="h-5 w-5 text-red-500" />
+            <XCircle className="h-5 w-5 text-error" />
           ) : null}
         </>
       )}
@@ -59,9 +58,9 @@ function ResultDisplay({ isCorrect }: ResultDisplayProps) {
   return (
     <div className="flex items-center gap-2">
       {isCorrect ? (
-        <span className="text-green-600">Resposta correta!</span>
+        <span className="text-success">Resposta correta!</span>
       ) : (
-        <span className="text-red-600">Resposta incorreta</span>
+        <span className="text-error">Resposta incorreta</span>
       )}
     </div>
   )
@@ -88,14 +87,14 @@ export function QuestionCard({ question, userAnswer, showResult, onAnswer, onChe
         <div className="space-y-4">
           <div className="text-lg font-medium">{question.title}</div>
           {question.context && (
-            <div className="text-gray-600">
+            <div className="text-muted-foreground">
               <ReactMarkdown>{question.context}</ReactMarkdown>
             </div>
           )}
           {question.files?.map((file, index) => (
             <img key={`file-${index}`} src={file} alt={`Imagem ${index + 1}`} className="max-w-full rounded-lg" />
           ))}
-          <p className="text-sm text-gray-500">{question.alternativesIntroduction}</p>
+          <p className="text-sm text-muted-foreground">{question.alternativesIntroduction}</p>
           <div className="space-y-2">
             {question.alternatives.map((alternative, index) => (
               <AlternativeButton
