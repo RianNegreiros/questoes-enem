@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
@@ -73,7 +74,7 @@ export default function QuestionPage() {
               <Badge variant="outline">{question.discipline}</Badge>
               <Badge variant="outline">{question.year}</Badge>
             </div>
-            <ShareButton url={`/questao/${question.year}-${question.index}`} title={question.title} />
+            <ShareButton url={`/question/${question.year}-${question.index}`} title={question.title} />
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -86,7 +87,7 @@ export default function QuestionPage() {
                 </div>
               )}
               {question.files?.map((file: string, index: number) => (
-                <img key={index} src={file} alt={`Imagem ${index + 1}`} className="max-w-full rounded-lg" />
+                <Image key={index} src={file} alt={`Imagem ${index + 1}`} className="max-w-full rounded-lg" />
               ))}
               <p className="text-sm text-muted-foreground">{question.alternativesIntroduction}</p>
               <div className="space-y-2">
@@ -103,8 +104,9 @@ export default function QuestionPage() {
                       key={`${question.year}-${question.index}-alternative-${alternative.letter}`}
                       onClick={() => !showResult && setSelectedAnswer(index)}
                       disabled={showResult}
-                      className={`w-full flex items-center gap-2 p-3 rounded-lg border transition-colors ${selectedAnswer === index ? 'border-info bg-info/10' : 'border-input hover:border-info'
-                        }`}
+                      className={`w-full flex items-center gap-2 p-3 rounded-lg border transition-colors ${
+                        selectedAnswer === index ? 'border-info bg-info/10' : 'border-input hover:border-info'
+                      }`}
                     >
                       <div className="flex items-center justify-center w-6 h-6 rounded-full border border-input">
                         {alternative.letter}
