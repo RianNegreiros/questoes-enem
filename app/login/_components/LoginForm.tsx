@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Chrome, Eye, EyeOff, Loader } from 'lucide-react'
+import { ArrowLeft, Chrome, Loader, Send } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -12,13 +12,27 @@ import { authClient } from '@/lib/auth-client'
 
 export function LoginForm() {
   const [googlePending, startGoogleTransation] = useTransition()
+  const [emailPending, startEmailTransation] = useTransition()
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [loginData, setLoginData] = useState({
-    email: '',
-    password: '',
-  })
+  const [email, setEmail] = useState('')
+
+  const handleEmailAuth = async () => {
+    startEmailTransation(async () => {
+      await authClient.emailOtp.sendVerificationOtp({
+        email: email,
+        type: 'sign-in',
+        fetchOptions: {
+          onSuccess: () => {
+            toast.success('Email enviado')
+            router.push(`/verify-request?email=${email}`)
+          },
+          onError: (error) => {
+            toast.error(error.error.message)
+          },
+        },
+      })
+    })
+  }
 
   const handleGoogleAuth = async () => {
     startGoogleTransation(async () => {
@@ -35,19 +49,6 @@ export function LoginForm() {
         },
       })
     })
-  }
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      router.push('/')
-    } catch (error) {
-      console.error('Login failed:', error)
-    } finally {
-      setIsLoading(false)
-    }
   }
 
   return (
@@ -86,47 +87,34 @@ export function LoginForm() {
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-muted-foreground">Ou continue com email</span>
+            <span className="bg-white p-2 text-muted-foreground">Ou continue com email</span>
           </div>
         </div>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="login-email">Email</Label>
-            <Input
-              id="login-email"
-              type="email"
-              placeholder="seu@email.com"
-              value={loginData.email}
-              onChange={(e) => setLoginData((prev) => ({ ...prev, email: e.target.value }))}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="login-password">Senha</Label>
-            <div className="relative">
-              <Input
-                id="login-password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Sua senha"
-                value={loginData.password}
-                onChange={(e) => setLoginData((prev) => ({ ...prev, password: e.target.value }))}
-                required
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Entrando...' : 'Entrar'}
-          </Button>
-        </form>
+        <div className="space-y-2">
+          <Label htmlFor="login-email">Email</Label>
+          <Input
+            id="login-email"
+            type="email"
+            placeholder="seu@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <Button onClick={handleEmailAuth} className="w-full mt-2" disabled={emailPending}>
+          {emailPending ? (
+            <>
+              <Loader className="size-4 animate-spin">
+                <span>Carregando...</span>
+              </Loader>
+            </>
+          ) : (
+            <>
+              <Send className="h-4 w-4 mr-2" />
+              Continuar com Email
+            </>
+          )}
+        </Button>
       </div>
     </div>
   )
