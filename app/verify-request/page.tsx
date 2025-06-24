@@ -2,7 +2,7 @@ import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { auth } from '@/lib/auth'
-import { VerifyOTPForm } from './_components/VeirifyOTPForm'
+import { VerifyOTPForm } from './_components/VerifyOTPForm'
 
 export default async function EmailOTPVerify() {
   const session = await auth.api.getSession({
@@ -12,5 +12,6 @@ export default async function EmailOTPVerify() {
   if (session) {
     return redirect('/')
   }
+
   return <VerifyOTPForm />
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { BookOpen, CheckCircle, Filter, TrendingUp, XCircle } from 'lucide-react'
@@ -25,6 +25,10 @@ export default function QuestionsHistory() {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const { data: session } = authClient.useSession()
+
+  const getAlternativeLetter = useCallback((index: number) => {
+    return String.fromCharCode(65 + index)
+  }, [])
 
   useEffect(() => {
     async function loadUserData() {
@@ -82,10 +86,6 @@ export default function QuestionsHistory() {
 
     return matchesStatus
   })
-
-  const getAlternativeLetter = (index: number) => {
-    return String.fromCharCode(65 + index)
-  }
 
   if (isLoading) {
     return (

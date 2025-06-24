@@ -14,8 +14,7 @@ import { authClient } from '@/lib/auth-client'
 export default function QuestionPage() {
   const params = useParams()
   const router = useRouter()
-  const [question, setQuestion] = useState<Question | null>(null)
-  const [userAnswer, setUserAnswer] = useState<UserAnswer | undefined>()
+  const [data, setData] = useState<{ question: Question | null; userAnswer?: UserAnswer }>({ question: null })
   const [isLoading, setIsLoading] = useState(true)
   const { data: session } = authClient.useSession()
 
@@ -25,22 +24,21 @@ export default function QuestionPage() {
         setIsLoading(true)
         const [year, index] = (params.id as string).split('-')
         const questionData = await getQuestionById(year, index)
-        setQuestion(questionData)
-
+        let userAnswer: UserAnswer | undefined = undefined
         if (session) {
           const userAnswers = await getUserAnswers()
           const questionId = `${questionData.year}-${questionData.index}`
           if (userAnswers[questionId]) {
-            setUserAnswer(userAnswers[questionId])
+            userAnswer = userAnswers[questionId]
           }
         }
+        setData({ question: questionData, userAnswer })
       } catch (error) {
         console.error('Failed to load question:', error)
       } finally {
         setIsLoading(false)
       }
     }
-
     loadQuestionAndAnswer()
   }, [params.id, session])
 
@@ -52,7 +50,7 @@ export default function QuestionPage() {
     )
   }
 
-  if (!question) {
+  if (!data.question) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
@@ -75,7 +73,11 @@ export default function QuestionPage() {
             Voltar
           </Button>
         </div>
-        <QuestionCard question={question} initialUserAnswer={userAnswer} />
+        <QuestionCard
+          question={data.question}
+          initialUserAnswer={data.userAnswer}
+          onAnswerUpdate={(answer) => setData((prev) => ({ ...prev, userAnswer: answer }))}
+        />
       </div>
     </div>
   )

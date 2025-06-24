@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
 
 import { getExams, getQuestions } from '@/app/services/enem-api'
-import { getUserAnswers, saveUserAnswer } from '@/app/services/user-answers'
+import { getUserAnswers, type UserAnswer } from '@/app/services/user-answers'
 import type { Exam } from '@/app/types/exam'
 import type { Question } from '@/app/types/question'
 import { QuestionList } from '@/components/question-list'
@@ -24,8 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { authClient } from '@/lib/auth-client'
 
 export default function HomeClient() {
-  const [answers, setAnswers] = useState<Record<string, number>>({})
-  const [showResult, setShowResult] = useState<Record<string, boolean>>({})
+  const [userAnswers, setUserAnswers] = useState<Record<string, UserAnswer>>({})
   const [currentPage, setCurrentPage] = useState(1)
   const questionsPerPage = 10
   const [questions, setQuestions] = useState<Question[]>([])
@@ -38,20 +37,17 @@ export default function HomeClient() {
   const { theme, setTheme } = useTheme()
 
   useEffect(() => {
-    async function loadSavedAnswers() {
+    async function loadUserAnswers() {
       if (session) {
         try {
-          const savedAnswers = await getUserAnswers()
-          const answersMap = Object.fromEntries(
-            Object.entries(savedAnswers).map(([key, value]) => [key, value.answerIndex])
-          )
-          setAnswers(answersMap)
+          const answers = await getUserAnswers()
+          setUserAnswers(answers)
         } catch (error) {
           console.error('Failed to load saved answers:', error)
         }
       }
     }
-    loadSavedAnswers()
+    loadUserAnswers()
   }, [session])
 
   const handleSignOut = async () => {
@@ -112,25 +108,11 @@ export default function HomeClient() {
 
   const totalPages = Math.ceil(totalQuestions / questionsPerPage)
 
-  const handleAnswer = async (questionId: string, answerIndex: number) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: answerIndex }))
-
-    if (session) {
-      try {
-        const question = questions.find((q) => `${q.year}-${q.index}` === questionId)
-        if (question) {
-          const isCorrect = question.alternatives[answerIndex]?.isCorrect || false
-          await saveUserAnswer(questionId, answerIndex, isCorrect)
-        }
-      } catch (error) {
-        console.error('Failed to save answer to database:', error)
-        toast.error('Erro ao salvar resposta')
-      }
-    }
-  }
-
-  const handleCheckAnswer = (questionId: string) => {
-    setShowResult((prev) => ({ ...prev, [questionId]: true }))
+  const handleAnswerUpdate = (questionId: string, answer: UserAnswer) => {
+    setUserAnswers((prev) => ({
+      ...prev,
+      [questionId]: answer,
+    }))
   }
 
   const getUserInitials = (name: string) => {
@@ -220,10 +202,8 @@ export default function HomeClient() {
           ) : (
             <QuestionList
               questions={questions}
-              answers={answers}
-              showResults={showResult}
-              onAnswer={handleAnswer}
-              onCheckAnswer={handleCheckAnswer}
+              userAnswers={userAnswers}
+              onAnswerUpdate={handleAnswerUpdate}
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}

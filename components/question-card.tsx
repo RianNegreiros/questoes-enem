@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { CheckCircle, ExternalLink, Loader2, RefreshCw, XCircle } from 'lucide-react'
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
 interface QuestionCardProps {
   question: Question
   initialUserAnswer?: UserAnswer
+  onAnswerUpdate?: (answer: UserAnswer) => void
 }
 
 interface AlternativeButtonProps {
@@ -83,11 +84,17 @@ function AlternativeButton({
   )
 }
 
-export function QuestionCard({ question, initialUserAnswer }: QuestionCardProps) {
+export function QuestionCard({ question, initialUserAnswer, onAnswerUpdate }: QuestionCardProps) {
   const [userAnswer, setUserAnswer] = useState(initialUserAnswer)
   const [selectedAlternative, setSelectedAlternative] = useState<number | undefined>(initialUserAnswer?.answerIndex)
   const [showResult, setShowResult] = useState(initialUserAnswer !== undefined)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    setUserAnswer(initialUserAnswer)
+    setSelectedAlternative(initialUserAnswer?.answerIndex)
+    setShowResult(initialUserAnswer !== undefined)
+  }, [initialUserAnswer])
 
   const handleCheckAnswer = async () => {
     if (selectedAlternative === undefined) return
@@ -96,12 +103,14 @@ export function QuestionCard({ question, initialUserAnswer }: QuestionCardProps)
     const isCorrect = question.alternatives[selectedAlternative]?.isCorrect === true
     try {
       const savedAnswer = await saveUserAnswer(`${question.year}-${question.index}`, selectedAlternative, isCorrect)
-      setUserAnswer({
+      const userAnswerResult = {
         answerIndex: savedAnswer.answerIndex,
         isCorrect: savedAnswer.isCorrect,
         answeredAt: savedAnswer.updatedAt,
-      })
+      }
+      setUserAnswer(userAnswerResult)
       setShowResult(true)
+      onAnswerUpdate?.(userAnswerResult)
     } catch {
       toast.error('Erro ao salvar resposta', {
         description: 'Não foi possível salvar sua resposta. Tente novamente.',
