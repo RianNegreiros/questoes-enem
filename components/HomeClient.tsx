@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { LogIn, LogOut, Moon, Sun, User } from 'lucide-react'
+import { History, LogIn, LogOut, Moon, Sun, User } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
 
 import { getExams, getQuestions } from '@/app/services/enem-api'
+import { getUserAnswers, type UserAnswer } from '@/app/services/user-answers'
 import type { Exam } from '@/app/types/exam'
 import type { Question } from '@/app/types/question'
 import { QuestionList } from '@/components/question-list'
@@ -23,8 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { authClient } from '@/lib/auth-client'
 
 export default function HomeClient() {
-  const [answers, setAnswers] = useState<Record<string, number>>({})
-  const [showResult, setShowResult] = useState<Record<string, boolean>>({})
+  const [userAnswers, setUserAnswers] = useState<Record<string, UserAnswer>>({})
   const [currentPage, setCurrentPage] = useState(1)
   const questionsPerPage = 10
   const [questions, setQuestions] = useState<Question[]>([])
@@ -36,11 +36,26 @@ export default function HomeClient() {
   const { data: session } = authClient.useSession()
   const { theme, setTheme } = useTheme()
 
+  useEffect(() => {
+    async function loadUserAnswers() {
+      if (session) {
+        try {
+          const answers = await getUserAnswers()
+          setUserAnswers(answers)
+        } catch (error) {
+          console.error('Failed to load saved answers:', error)
+        }
+      }
+    }
+    loadUserAnswers()
+  }, [session])
+
   const handleSignOut = async () => {
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          router.push('/')
+          setUserAnswers({})
+          router.refresh()
           toast.success('Saiu da conta com successo')
         },
       },
@@ -94,12 +109,11 @@ export default function HomeClient() {
 
   const totalPages = Math.ceil(totalQuestions / questionsPerPage)
 
-  const handleAnswer = (questionId: string, answerIndex: number) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: answerIndex }))
-  }
-
-  const handleCheckAnswer = (questionId: string) => {
-    setShowResult((prev) => ({ ...prev, [questionId]: true }))
+  const handleAnswerUpdate = (questionId: string, answer: UserAnswer) => {
+    setUserAnswers((prev) => ({
+      ...prev,
+      [questionId]: answer,
+    }))
   }
 
   const getUserInitials = (name: string) => {
@@ -118,7 +132,6 @@ export default function HomeClient() {
           <h1 className="text-3xl font-bold">Questões ENEM</h1>
 
           <div className="flex items-center gap-4">
-            {/* Theme Switcher */}
             <Button variant="outline" size="icon" onClick={toggleTheme} className="h-9 w-9">
               <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -150,6 +163,10 @@ export default function HomeClient() {
                     </div>
                   </div>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push('/history')} className="cursor-pointer">
+                    <History className="mr-2 h-4 w-4" />
+                    <span>Histórico</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sair</span>
@@ -186,10 +203,8 @@ export default function HomeClient() {
           ) : (
             <QuestionList
               questions={questions}
-              answers={answers}
-              showResults={showResult}
-              onAnswer={handleAnswer}
-              onCheckAnswer={handleCheckAnswer}
+              userAnswers={userAnswers}
+              onAnswerUpdate={handleAnswerUpdate}
               currentPage={currentPage}
               totalPages={totalPages}
               onPageChange={setCurrentPage}

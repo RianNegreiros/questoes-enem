@@ -1,5 +1,6 @@
 'use client'
 
+import { UserAnswer } from '@/app/services/user-answers'
 import { Question } from '@/app/types/question'
 import { QuestionCard } from '@/components/question-card'
 import {
@@ -14,10 +15,8 @@ import {
 
 interface QuestionListProps {
   questions: Question[]
-  answers: Record<string, number>
-  showResults: Record<string, boolean>
-  onAnswer: (questionId: string, answerIndex: number) => void
-  onCheckAnswer: (questionId: string) => void
+  userAnswers: Record<string, UserAnswer>
+  onAnswerUpdate: (questionId: string, answer: UserAnswer) => void
   currentPage: number
   totalPages: number
   onPageChange: (page: number) => void
@@ -25,27 +24,26 @@ interface QuestionListProps {
 
 export function QuestionList({
   questions,
-  answers,
-  showResults,
-  onAnswer,
-  onCheckAnswer,
+  userAnswers,
+  onAnswerUpdate,
   currentPage,
   totalPages,
   onPageChange,
 }: QuestionListProps) {
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {questions.map((question) => (
-          <QuestionCard
-            key={`${question.year}-${question.index}`}
-            question={question}
-            userAnswer={answers[`${question.year}-${question.index}`]}
-            showResult={showResults[`${question.year}-${question.index}`]}
-            onAnswer={(index) => onAnswer(`${question.year}-${question.index}`, index)}
-            onCheckAnswer={() => onCheckAnswer(`${question.year}-${question.index}`)}
-          />
-        ))}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {questions.map((question) => {
+          const questionId = `${question.year}-${question.index}`
+          return (
+            <QuestionCard
+              key={questionId}
+              question={question}
+              initialUserAnswer={userAnswers[questionId]}
+              onAnswerUpdate={(answer) => onAnswerUpdate(questionId, answer)}
+            />
+          )
+        })}
       </div>
 
       {totalPages > 1 && (

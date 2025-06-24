@@ -1,7 +1,7 @@
 'use client'
 
 import type React from 'react'
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, Loader, Mail } from 'lucide-react'
 import { toast } from 'sonner'
@@ -19,6 +19,12 @@ export function VerifyOTPForm() {
   const params = useSearchParams()
   const email = params.get('email') as string
   const isOTPCompleted = otp.length === 6
+
+  useEffect(() => {
+    if (email === null) {
+      router.push('/')
+    }
+  }, [email, router])
 
   const verifyOTP = async () => {
     startEmailTransation(async () => {
