@@ -65,4 +65,6 @@ Acesse em [http://localhost:3000](http://localhost:3000).
 - TypeScript
 - Tailwind CSS
 - Prisma
+- PostgreSQL
 - Better Auth
+- Resend

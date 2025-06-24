@@ -60,12 +60,17 @@ export async function GET(request: NextRequest) {
         questionId: true,
         answerIndex: true,
         isCorrect: true,
+        updatedAt: true,
       },
     })
 
-    const answersMap: Record<string, number> = {}
+    const answersMap: Record<string, { answerIndex: number; isCorrect: boolean; answeredAt: Date }> = {}
     userAnswers.forEach((answer) => {
-      answersMap[answer.questionId] = answer.answerIndex
+      answersMap[answer.questionId] = {
+        answerIndex: answer.answerIndex,
+        isCorrect: answer.isCorrect,
+        answeredAt: answer.updatedAt,
+      }
     })
 
     return NextResponse.json(answersMap)

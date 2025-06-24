@@ -1,22 +1,22 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { BookOpen, Calendar, CheckCircle, Filter, TrendingUp, XCircle } from 'lucide-react'
+import { BookOpen, CheckCircle, Filter, TrendingUp, XCircle } from 'lucide-react'
 
 import { getQuestionById } from '@/app/services/enem-api'
-import { getUserAnswers } from '@/app/services/user-answers'
+import { getUserAnswers, type UserAnswer } from '@/app/services/user-answers'
 import type { Question } from '@/app/types/question'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { authClient } from '@/lib/auth-client'
+import { cn } from '@/lib/utils'
 
 interface QuestionWithAnswer extends Question {
-  userAnswer: number
-  isCorrect: boolean
-  answeredAt: string
+  userAnswer: UserAnswer
 }
 
 export default function QuestionsHistory() {
@@ -36,8 +36,7 @@ export default function QuestionsHistory() {
       try {
         setIsLoading(true)
 
-        const [userAnswers] = await Promise.all([getUserAnswers()])
-
+        const userAnswers = await getUserAnswers()
         const answeredQuestionIds = Object.keys(userAnswers)
 
         if (answeredQuestionIds.length === 0) {
@@ -54,14 +53,15 @@ export default function QuestionsHistory() {
             questionsData.push({
               ...question,
               userAnswer: userAnswers[questionId],
-              isCorrect: question.alternatives[userAnswers[questionId]]?.isCorrect || false,
             })
           } catch (error) {
             console.error(`Failed to load question ${questionId}:`, error)
           }
         }
 
-        questionsData.sort((a, b) => new Date(b.answeredAt).getTime() - new Date(a.answeredAt).getTime())
+        questionsData.sort(
+          (a, b) => new Date(b.userAnswer.answeredAt).getTime() - new Date(a.userAnswer.answeredAt).getTime()
+        )
 
         setQuestionsWithAnswers(questionsData)
       } catch (error) {
@@ -77,8 +77,8 @@ export default function QuestionsHistory() {
   const filteredQuestions = questionsWithAnswers.filter((question) => {
     const matchesStatus =
       selectedStatus === 'Todas' ||
-      (selectedStatus === 'Corretas' && question.isCorrect) ||
-      (selectedStatus === 'Incorretas' && !question.isCorrect)
+      (selectedStatus === 'Corretas' && question.userAnswer.isCorrect) ||
+      (selectedStatus === 'Incorretas' && !question.userAnswer.isCorrect)
 
     return matchesStatus
   })
@@ -91,7 +91,7 @@ export default function QuestionsHistory() {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-6xl mx-auto space-y-6">
-          <div className="text-center py-8">
+          <div className="py-8 text-center">
             <p className="text-muted-foreground">Carregando histórico...</p>
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function QuestionsHistory() {
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="text-center space-y-2">
+        <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold text-foreground">Histórico de Questões ENEM</h1>
           <p className="text-muted-foreground">Acompanhe seu progresso e desempenho nas questões respondidas</p>
         </div>
@@ -115,7 +115,7 @@ export default function QuestionsHistory() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Status</label>
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
@@ -141,20 +141,23 @@ export default function QuestionsHistory() {
           <CardContent>
             <div className="space-y-4">
               {filteredQuestions.map((question) => (
-                <div
+                <Link
+                  href={`/question/${question.year}-${question.index}`}
                   key={`${question.year}-${question.index}`}
-                  className={`border rounded-lg p-4 transition-colors ${question.isCorrect
-                      ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20'
-                      : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20'
-                    }`}
+                  className={cn(
+                    'block rounded-lg border p-4 transition-colors',
+                    question.userAnswer.isCorrect
+                      ? 'border-green-200 bg-green-50 hover:bg-green-100/50 dark:border-green-800 dark:bg-green-950/20 dark:hover:bg-green-900/50'
+                      : 'border-red-200 bg-red-50 hover:bg-red-100/50 dark:border-red-800 dark:bg-red-950/20 dark:hover:bg-red-900/50'
+                  )}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="secondary">{question.discipline}</Badge>
                         <Badge variant="outline">{question.year}</Badge>
 
-                        {question.isCorrect ? (
+                        {question.userAnswer.isCorrect ? (
                           <Badge className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-900">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Correta
@@ -167,13 +170,13 @@ export default function QuestionsHistory() {
                         )}
                       </div>
 
-                      <p className="text-sm text-foreground font-medium">{question.title}</p>
+                      <p className="font-medium text-foreground">{question.title}</p>
 
                       <div className="flex items-center gap-4 text-sm">
                         <span className="text-foreground">
-                          <strong>Sua resposta:</strong> {getAlternativeLetter(question.userAnswer)}
+                          <strong>Sua resposta:</strong> {getAlternativeLetter(question.userAnswer.answerIndex)}
                         </span>
-                        {!question.isCorrect && (
+                        {!question.userAnswer.isCorrect && (
                           <span className="text-green-600 dark:text-green-400">
                             <strong>Resposta correta:</strong> {question.correctAlternative}
                           </span>
@@ -181,11 +184,11 @@ export default function QuestionsHistory() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
 
               {filteredQuestions.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="py-8 text-center text-muted-foreground">
                   <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Nenhuma questão encontrada com os filtros aplicados.</p>
                 </div>

@@ -18,7 +18,13 @@ export async function saveUserAnswer(questionId: string, answerIndex: number, is
   return response.json()
 }
 
-export async function getUserAnswers(): Promise<Record<string, number>> {
+export interface UserAnswer {
+  answerIndex: number
+  isCorrect: boolean
+  answeredAt: string
+}
+
+export async function getUserAnswers(): Promise<Record<string, UserAnswer>> {
   const response = await fetch('/api/user-answers', {
     method: 'GET',
     headers: {

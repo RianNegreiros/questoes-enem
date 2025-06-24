@@ -42,7 +42,10 @@ export default function HomeClient() {
       if (session) {
         try {
           const savedAnswers = await getUserAnswers()
-          setAnswers(savedAnswers)
+          const answersMap = Object.fromEntries(
+            Object.entries(savedAnswers).map(([key, value]) => [key, value.answerIndex])
+          )
+          setAnswers(answersMap)
         } catch (error) {
           console.error('Failed to load saved answers:', error)
         }

@@ -1,80 +1,48 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
-import { toast } from 'sonner'
+import { ArrowLeft } from 'lucide-react'
 
 import { getQuestionById } from '@/app/services/enem-api'
-import { getUserAnswers, saveUserAnswer } from '@/app/services/user-answers'
-import { Question } from '@/app/types/question'
-import { ShareButton } from '@/components/share-button'
-import { Badge } from '@/components/ui/badge'
+import { getUserAnswers, type UserAnswer } from '@/app/services/user-answers'
+import type { Question } from '@/app/types/question'
+import { QuestionCard } from '@/components/question-card'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { authClient } from '@/lib/auth-client'
 
 export default function QuestionPage() {
   const params = useParams()
   const router = useRouter()
   const [question, setQuestion] = useState<Question | null>(null)
-  const [selectedAnswer, setSelectedAnswer] = useState<number | undefined>()
-  const [showResult, setShowResult] = useState(false)
+  const [userAnswer, setUserAnswer] = useState<UserAnswer | undefined>()
   const [isLoading, setIsLoading] = useState(true)
   const { data: session } = authClient.useSession()
 
   useEffect(() => {
-    async function loadQuestion() {
+    async function loadQuestionAndAnswer() {
       try {
+        setIsLoading(true)
         const [year, index] = (params.id as string).split('-')
-        const data = await getQuestionById(year, index)
-        setQuestion(data)
+        const questionData = await getQuestionById(year, index)
+        setQuestion(questionData)
+
+        if (session) {
+          const userAnswers = await getUserAnswers()
+          const questionId = `${questionData.year}-${questionData.index}`
+          if (userAnswers[questionId]) {
+            setUserAnswer(userAnswers[questionId])
+          }
+        }
       } catch (error) {
         console.error('Failed to load question:', error)
       } finally {
         setIsLoading(false)
       }
     }
-    loadQuestion()
-  }, [params.id])
 
-  // Load saved answer when user is logged in
-  useEffect(() => {
-    async function loadSavedAnswer() {
-      if (session && question) {
-        try {
-          const savedAnswers = await getUserAnswers()
-          const questionId = `${question.year}-${question.index}`
-          if (savedAnswers[questionId] !== undefined) {
-            setSelectedAnswer(savedAnswers[questionId])
-          }
-        } catch (error) {
-          console.error('Failed to load saved answer:', error)
-        }
-      }
-    }
-    loadSavedAnswer()
-  }, [session, question])
-
-  const handleAnswerSelect = async (answerIndex: number) => {
-    if (showResult) return
-
-    setSelectedAnswer(answerIndex)
-
-    // Save to database if user is logged in
-    if (session && question) {
-      try {
-        const questionId = `${question.year}-${question.index}`
-        const isCorrect = question.alternatives[answerIndex]?.isCorrect || false
-        await saveUserAnswer(questionId, answerIndex, isCorrect)
-      } catch (error) {
-        console.error('Failed to save answer to database:', error)
-        toast.error('Erro ao salvar resposta')
-      }
-    }
-  }
+    loadQuestionAndAnswer()
+  }, [params.id, session])
 
   if (isLoading) {
     return (
@@ -88,9 +56,9 @@ export default function QuestionPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Questão não encontrada</h1>
+          <h1 className="mb-4 text-2xl font-bold">Questão não encontrada</h1>
           <Button onClick={() => router.push('/')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar para a página inicial
           </Button>
         </div>
@@ -100,92 +68,14 @@ export default function QuestionPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="max-w-3xl mx-auto">
+      <div className="mx-auto max-w-3xl">
         <div className="mb-6">
           <Button variant="outline" onClick={() => router.push('/')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar
           </Button>
         </div>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline">{question.discipline}</Badge>
-              <Badge variant="outline">{question.year}</Badge>
-            </div>
-            <ShareButton url={`/question/${question.year}-${question.index}`} title={question.title} />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="text-lg font-medium">
-                <ReactMarkdown>{question.title}</ReactMarkdown>
-              </div>
-              {question.context && (
-                <div className="text-muted-foreground">
-                  <ReactMarkdown>{question.context}</ReactMarkdown>
-                </div>
-              )}
-              {question.files?.map((file: string, index: number) => (
-                <Image key={index} src={file} alt={`Imagem ${index + 1}`} className="max-w-full rounded-lg" />
-              ))}
-              <p className="text-sm text-muted-foreground">{question.alternativesIntroduction}</p>
-              <div className="space-y-2">
-                {question.alternatives.map(
-                  (
-                    alternative: {
-                      letter: string
-                      text: string
-                      isCorrect: boolean
-                    },
-                    index: number
-                  ) => (
-                    <button
-                      key={`${question.year}-${question.index}-alternative-${alternative.letter}`}
-                      onClick={() => handleAnswerSelect(index)}
-                      disabled={showResult}
-                      className={`w-full flex items-center gap-2 p-3 rounded-lg border transition-colors ${
-                        selectedAnswer === index ? 'border-info bg-info/10' : 'border-input hover:border-info'
-                      }`}
-                    >
-                      <div className="flex items-center justify-center w-6 h-6 rounded-full border border-input">
-                        {alternative.letter}
-                      </div>
-                      <span className="flex-1 text-left">{alternative.text}</span>
-                      {showResult && (
-                        <>
-                          {alternative.isCorrect ? (
-                            <CheckCircle className="h-5 w-5 text-success" />
-                          ) : selectedAnswer === index ? (
-                            <XCircle className="h-5 w-5 text-error" />
-                          ) : null}
-                        </>
-                      )}
-                    </button>
-                  )
-                )}
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button
-              variant="outline"
-              onClick={() => setShowResult(true)}
-              disabled={selectedAnswer === undefined || showResult}
-            >
-              Verificar Resposta
-            </Button>
-            {showResult && (
-              <div className="flex items-center gap-2">
-                {question.alternatives[selectedAnswer!]?.isCorrect ? (
-                  <span className="text-success">Resposta correta!</span>
-                ) : (
-                  <span className="text-error">Resposta incorreta</span>
-                )}
-              </div>
-            )}
-          </CardFooter>
-        </Card>
+        <QuestionCard question={question} initialUserAnswer={userAnswer} />
       </div>
     </div>
   )
