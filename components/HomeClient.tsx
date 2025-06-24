@@ -54,7 +54,8 @@ export default function HomeClient() {
     await authClient.signOut({
       fetchOptions: {
         onSuccess: () => {
-          router.push('/')
+          setUserAnswers({})
+          router.refresh()
           toast.success('Saiu da conta com successo')
         },
       },
