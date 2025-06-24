@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { LogIn, LogOut, Moon, Sun, User } from 'lucide-react'
+import { History, LogIn, LogOut, Moon, Sun, User } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
 
 import { getExams, getQuestions } from '@/app/services/enem-api'
+import { getUserAnswers, saveUserAnswer } from '@/app/services/user-answers'
 import type { Exam } from '@/app/types/exam'
 import type { Question } from '@/app/types/question'
 import { QuestionList } from '@/components/question-list'
@@ -35,6 +36,20 @@ export default function HomeClient() {
   const router = useRouter()
   const { data: session } = authClient.useSession()
   const { theme, setTheme } = useTheme()
+
+  useEffect(() => {
+    async function loadSavedAnswers() {
+      if (session) {
+        try {
+          const savedAnswers = await getUserAnswers()
+          setAnswers(savedAnswers)
+        } catch (error) {
+          console.error('Failed to load saved answers:', error)
+        }
+      }
+    }
+    loadSavedAnswers()
+  }, [session])
 
   const handleSignOut = async () => {
     await authClient.signOut({
@@ -94,8 +109,21 @@ export default function HomeClient() {
 
   const totalPages = Math.ceil(totalQuestions / questionsPerPage)
 
-  const handleAnswer = (questionId: string, answerIndex: number) => {
+  const handleAnswer = async (questionId: string, answerIndex: number) => {
     setAnswers((prev) => ({ ...prev, [questionId]: answerIndex }))
+
+    if (session) {
+      try {
+        const question = questions.find((q) => `${q.year}-${q.index}` === questionId)
+        if (question) {
+          const isCorrect = question.alternatives[answerIndex]?.isCorrect || false
+          await saveUserAnswer(questionId, answerIndex, isCorrect)
+        }
+      } catch (error) {
+        console.error('Failed to save answer to database:', error)
+        toast.error('Erro ao salvar resposta')
+      }
+    }
   }
 
   const handleCheckAnswer = (questionId: string) => {
@@ -118,7 +146,6 @@ export default function HomeClient() {
           <h1 className="text-3xl font-bold">Questões ENEM</h1>
 
           <div className="flex items-center gap-4">
-            {/* Theme Switcher */}
             <Button variant="outline" size="icon" onClick={toggleTheme} className="h-9 w-9">
               <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
@@ -150,6 +177,10 @@ export default function HomeClient() {
                     </div>
                   </div>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push('/history')} className="cursor-pointer">
+                    <History className="mr-2 h-4 w-4" />
+                    <span>Histórico</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Sair</span>

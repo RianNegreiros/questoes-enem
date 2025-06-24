@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { CheckCircle, ExternalLink, XCircle } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
@@ -32,8 +33,9 @@ function AlternativeButton({ letter, text, isSelected, isCorrect, showResult, on
     <button
       onClick={onClick}
       disabled={showResult}
-      className={`w-full flex items-center gap-2 p-3 rounded-lg border transition-colors ${isSelected ? 'border-info bg-info/10' : 'border-input hover:border-info'
-        }`}
+      className={`w-full flex items-center gap-2 p-3 rounded-lg border transition-colors ${
+        isSelected ? 'border-info bg-info/10' : 'border-input hover:border-info'
+      }`}
     >
       <div className="flex items-center justify-center w-6 h-6 rounded-full border border-input">{letter}</div>
       <span className="flex-1 text-left">{text}</span>
@@ -75,12 +77,12 @@ export function QuestionCard({ question, userAnswer, showResult, onAnswer, onChe
           <Badge variant="outline">{question.year}</Badge>
         </div>
         <div className="flex items-center gap-2">
-          <Link href={`/questao/${question.year}-${question.index}`}>
+          <Link href={`/question/${question.year}-${question.index}`}>
             <Button variant="ghost" size="icon">
               <ExternalLink className="h-4 w-4" />
             </Button>
           </Link>
-          <ShareButton url={`/questao/${question.year}-${question.index}`} title={question.title} />
+          <ShareButton url={`/question/${question.year}-${question.index}`} title={question.title} />
         </div>
       </CardHeader>
       <CardContent>
@@ -92,7 +94,7 @@ export function QuestionCard({ question, userAnswer, showResult, onAnswer, onChe
             </div>
           )}
           {question.files?.map((file, index) => (
-            <img key={`file-${index}`} src={file} alt={`Imagem ${index + 1}`} className="max-w-full rounded-lg" />
+            <Image key={`file-${index}`} src={file} alt={`Imagem ${index + 1}`} className="max-w-full rounded-lg" />
           ))}
           <p className="text-sm text-muted-foreground">{question.alternativesIntroduction}</p>
           <div className="space-y-2">

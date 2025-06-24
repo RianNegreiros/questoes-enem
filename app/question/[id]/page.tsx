@@ -5,13 +5,16 @@ import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import { toast } from 'sonner'
 
 import { getQuestionById } from '@/app/services/enem-api'
+import { getUserAnswers, saveUserAnswer } from '@/app/services/user-answers'
 import { Question } from '@/app/types/question'
 import { ShareButton } from '@/components/share-button'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+import { authClient } from '@/lib/auth-client'
 
 export default function QuestionPage() {
   const params = useParams()
@@ -20,6 +23,7 @@ export default function QuestionPage() {
   const [selectedAnswer, setSelectedAnswer] = useState<number | undefined>()
   const [showResult, setShowResult] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const { data: session } = authClient.useSession()
 
   useEffect(() => {
     async function loadQuestion() {
@@ -35,6 +39,42 @@ export default function QuestionPage() {
     }
     loadQuestion()
   }, [params.id])
+
+  // Load saved answer when user is logged in
+  useEffect(() => {
+    async function loadSavedAnswer() {
+      if (session && question) {
+        try {
+          const savedAnswers = await getUserAnswers()
+          const questionId = `${question.year}-${question.index}`
+          if (savedAnswers[questionId] !== undefined) {
+            setSelectedAnswer(savedAnswers[questionId])
+          }
+        } catch (error) {
+          console.error('Failed to load saved answer:', error)
+        }
+      }
+    }
+    loadSavedAnswer()
+  }, [session, question])
+
+  const handleAnswerSelect = async (answerIndex: number) => {
+    if (showResult) return
+
+    setSelectedAnswer(answerIndex)
+
+    // Save to database if user is logged in
+    if (session && question) {
+      try {
+        const questionId = `${question.year}-${question.index}`
+        const isCorrect = question.alternatives[answerIndex]?.isCorrect || false
+        await saveUserAnswer(questionId, answerIndex, isCorrect)
+      } catch (error) {
+        console.error('Failed to save answer to database:', error)
+        toast.error('Erro ao salvar resposta')
+      }
+    }
+  }
 
   if (isLoading) {
     return (
@@ -102,7 +142,7 @@ export default function QuestionPage() {
                   ) => (
                     <button
                       key={`${question.year}-${question.index}-alternative-${alternative.letter}`}
-                      onClick={() => !showResult && setSelectedAnswer(index)}
+                      onClick={() => handleAnswerSelect(index)}
                       disabled={showResult}
                       className={`w-full flex items-center gap-2 p-3 rounded-lg border transition-colors ${
                         selectedAnswer === index ? 'border-info bg-info/10' : 'border-input hover:border-info'

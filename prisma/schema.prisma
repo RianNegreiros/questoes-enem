@@ -24,6 +24,7 @@ model User {
   updatedAt     DateTime
   sessions      Session[]
   accounts      Account[]
+  userAnswers   UserAnswer[]
 
   @@unique([email])
   @@map("user")
@@ -72,4 +73,18 @@ model Verification {
   updatedAt  DateTime?
 
   @@map("verification")
+}
+
+model UserAnswer {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId String 
+  answerIndex Int
+  isCorrect Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, questionId])
+  @@map("user_answer")
 }

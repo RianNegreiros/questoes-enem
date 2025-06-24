@@ -3,6 +3,7 @@
 Aplicação para responder questões do ENEM.
 
 ## Instalação
+
 1. Clone o repositório:
    ```bash
    git clone https://github.com/riannegreiros/questoes-enem.git
@@ -16,6 +17,7 @@ Aplicação para responder questões do ENEM.
    ```
 
 ## Configuração
+
 Crie um arquivo `.env.local` na raiz do projeto com o seguinte conteúdo:
 
 ```env
@@ -34,6 +36,7 @@ RESEND_DOMAIN=
 ```
 
 Para obter as credenciais necessárias, consulte:
+
 - [Better Auth: Variáveis de ambiente](https://www.better-auth.com/docs/installation#set-environment-variables)
 - [Credenciais Google](https://www.better-auth.com/docs/authentication/google#get-your-google-credentials)
 - [Resend API key](https://resend.com/docs/dashboard/api-keys/introduction)
@@ -41,11 +44,13 @@ Para obter as credenciais necessárias, consulte:
 ## Uso
 
 Sicronize seu banco de dados
+
 ```bash
 npx prisma db push
 ```
 
 Inicie o servidor de desenvolvimento:
+
 ```bash
 npm run dev
 # ou
@@ -55,6 +60,7 @@ yarn dev
 Acesse em [http://localhost:3000](http://localhost:3000).
 
 ## Tecnologias
+
 - Next.js
 - TypeScript
 - Tailwind CSS
