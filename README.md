@@ -1,6 +1,21 @@
 # Questões ENEM
 
-Aplicação para responder questões do ENEM.
+Aplicação web para responder questões do ENEM, acompanhar histórico. 
+
+## Tecnologias
+
+- [Next.js](https://nextjs.org/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Prisma ORM](https://www.prisma.io/)
+- [PostgreSQL](https://www.postgresql.org/)
+- [Better Auth](https://www.better-auth.com/)
+- [Resend](https://resend.com/)
+
+## Pré-requisitos
+
+- Node.js >= 18.x
+- Docker (opcional, para ambiente containerizado)
 
 ## Instalação
 
@@ -14,49 +29,48 @@ Aplicação para responder questões do ENEM.
    npm install
    ```
 
-## Configuração
+## Configuração do Ambiente
 
 Crie um arquivo `.env.local` na raiz do projeto com o seguinte conteúdo:
 
 ```env
-NEXT_PUBLIC_API_URL=https://api.enem.dev/v1
-
-DATABASE_URL="postgresql://postgres:postgres@db:5432/questoes_enem_dev"
-
-BETTER_AUTH_SECRET= # Sua chave secreta do Better Auth
-BETTER_AUTH_URL=http://localhost:3000
-
+NEXT_PUBLIC_API_URL=https://enem-api-woad.vercel.app/v1 # URL da API de questões
+DATABASE_URL="postgresql://postgres:postgres@db:5432/questoes_enem_dev" # String de conexão do banco
+BETTER_AUTH_SECRET= # Chave secreta do Better Auth
+BETTER_AUTH_URL=http://localhost:3000 # URL do Better Auth
 GOOGLE_CLIENT_ID= # ID do cliente Google
 GOOGLE_CLIENT_SECRET= # Segredo do cliente Google
-
-RESEND_API_KEY=
-RESEND_DOMAIN=
+RESEND_API_KEY= # Chave da API Resend
+RESEND_DOMAIN= # Domínio Resend
 ```
 
-Para obter as credenciais necessárias, consulte:
+> Consulte a documentação dos serviços para obter as credenciais:
+> - [Better Auth: Variáveis de ambiente](https://www.better-auth.com/docs/installation#set-environment-variables)
+> - [Credenciais Google](https://www.better-auth.com/docs/authentication/google#get-your-google-credentials)
+> - [Resend API key](https://resend.com/docs/dashboard/api-keys/introduction)
 
-- [Better Auth: Variáveis de ambiente](https://www.better-auth.com/docs/installation#set-environment-variables)
-- [Credenciais Google](https://www.better-auth.com/docs/authentication/google#get-your-google-credentials)
-- [Resend API key](https://resend.com/docs/dashboard/api-keys/introduction)
+## Banco de Dados
 
-## Uso
-
-Sicronize seu banco de dados
+Sincronize o banco de dados localmente:
 
 ```bash
-# Para produção use o comando migrate
 npx prisma db push
 ```
 
-Inicie o servidor de desenvolvimento:
+> Para produção, utilize migrations:
+> ```bash
+> npx prisma migrate deploy
+> ```
+
+## Uso
+
+### Ambiente de desenvolvimento
 
 ```bash
 npm run dev
 ```
 
-## Docker
-
-Antes rodar o comando, comente a linha `"postinstall": "prisma generate"` no arquivo `package.json`. Este script é necessário apenas para o deploy na Vercel.
+### Usando Docker
 
 ```bash
 docker compose up -d
@@ -64,12 +78,6 @@ docker compose up -d
 
 Acesse em [http://localhost:3000](http://localhost:3000).
 
-## Tecnologias
+## Agradecimento
 
-- Next.js
-- TypeScript
-- Tailwind CSS
-- Prisma
-- PostgreSQL
-- Better Auth
-- Resend
+Esta aplicação utiliza uma API baseada em um fork do repositório [yunger7/enem-api](https://github.com/yunger7/enem-api), com a adição de um endpoint para buscar questões por disciplina. Agradecimento ao autor original pelo excelente trabalho!
