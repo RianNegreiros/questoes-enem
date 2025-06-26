@@ -6,7 +6,7 @@ import { History, LogIn, LogOut, Moon, Sun, User } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
 
-import { getExamByYear, getExams, getQuestions } from '@/app/services/enem-api'
+import { useExamByYear, useExams, useQuestions } from '@/app/services/enem-api'
 import { getUserAnswers, type UserAnswer } from '@/app/services/user-answers'
 import type { Exam } from '@/app/types/exam'
 import type { Question } from '@/app/types/question'
@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { authClient } from '@/lib/auth-client'
 
 export default function HomeClient() {
@@ -30,13 +31,21 @@ export default function HomeClient() {
   const [questions, setQuestions] = useState<Question[]>([])
   const [years, setYears] = useState<string[]>([])
   const [selectedYear, setSelectedYear] = useState<string>('')
-  const [isLoading, setIsLoading] = useState(true)
   const [totalQuestions, setTotalQuestions] = useState(0)
   const router = useRouter()
   const { data: session } = authClient.useSession()
   const { theme, setTheme } = useTheme()
   const [disciplines, setDisciplines] = useState<{ label: string; value: string }[]>([])
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>('')
+
+  const { data: examsData } = useExams()
+  const { data: examData } = useExamByYear(selectedYear)
+  const { data: questionsData, isLoading: isQuestionsLoading } = useQuestions(
+    selectedYear,
+    questionsPerPage,
+    currentPage ? (currentPage - 1) * questionsPerPage : 0,
+    selectedDiscipline || undefined
+  )
 
   useEffect(() => {
     async function loadUserAnswers() {
@@ -69,59 +78,34 @@ export default function HomeClient() {
   }
 
   useEffect(() => {
-    async function loadExams() {
-      try {
-        const exams = await getExams()
-        const availableYears = exams
-          .map((exam: Exam) => exam.year.toString())
-          .sort((a: string, b: string) => Number(b) - Number(a))
-        setYears(availableYears)
-        if (availableYears.length > 0) {
-          setSelectedYear(availableYears[0])
-        }
-      } catch (error) {
-        console.error('Failed to load exams:', error)
+    if (examsData) {
+      const availableYears = examsData
+        .map((exam: Exam) => exam.year.toString())
+        .sort((a: string, b: string) => Number(b) - Number(a))
+      setYears(availableYears)
+      if (availableYears.length > 0 && !selectedYear) {
+        setSelectedYear(availableYears[0])
       }
     }
-    loadExams()
-  }, [])
+  }, [examsData, selectedYear])
 
   useEffect(() => {
-    async function loadDisciplines() {
-      if (!selectedYear) return
-      try {
-        const exam = await getExamByYear(selectedYear)
-        setDisciplines(exam.disciplines)
-        setSelectedDiscipline('')
-      } catch {
-        setDisciplines([])
-        setSelectedDiscipline('')
-      }
+    if (examData) {
+      setDisciplines(examData.disciplines)
+      setSelectedDiscipline('')
     }
-    loadDisciplines()
-  }, [selectedYear])
+  }, [examData, selectedYear])
 
   useEffect(() => {
     setCurrentPage(1)
   }, [selectedYear, selectedDiscipline])
 
   useEffect(() => {
-    async function loadQuestions() {
-      if (!selectedYear) return
-      setIsLoading(true)
-      try {
-        const offset = (currentPage - 1) * questionsPerPage
-        const data = await getQuestions(selectedYear, questionsPerPage, offset, selectedDiscipline || undefined)
-        setQuestions(data.questions)
-        setTotalQuestions(data.metadata?.total || 0)
-      } catch (error) {
-        console.error('Failed to load questions:', error)
-      } finally {
-        setIsLoading(false)
-      }
+    if (questionsData) {
+      setQuestions(questionsData.questions)
+      setTotalQuestions(questionsData.metadata?.total || 0)
     }
-    loadQuestions()
-  }, [selectedYear, currentPage, selectedDiscipline])
+  }, [questionsData])
 
   const totalPages = Math.ceil(totalQuestions / questionsPerPage)
 
@@ -232,8 +216,12 @@ export default function HomeClient() {
             )}
           </div>
 
-          {isLoading ? (
-            <div className="text-center py-8">Carregando questões...</div>
+          {isQuestionsLoading ? (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 py-8">
+              {Array.from({ length: questionsPerPage }).map((_, i) => (
+                <Skeleton key={i} className="h-40 w-full" />
+              ))}
+            </div>
           ) : (
             <QuestionList
               questions={questions}

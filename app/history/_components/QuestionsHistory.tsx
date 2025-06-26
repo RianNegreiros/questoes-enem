@@ -12,11 +12,21 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { authClient } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
 
 interface QuestionWithAnswer extends Question {
   userAnswer: UserAnswer
+}
+
+function useDebounce<T>(value: T, delay: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value)
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay)
+    return () => clearTimeout(handler)
+  }, [value, delay])
+  return debouncedValue
 }
 
 export default function QuestionsHistory() {
@@ -30,6 +40,9 @@ export default function QuestionsHistory() {
   const getAlternativeLetter = useCallback((index: number) => {
     return String.fromCharCode(65 + index)
   }, [])
+
+  const debouncedStatus = useDebounce(selectedStatus, 300)
+  const debouncedDiscipline = useDebounce(selectedDiscipline, 300)
 
   useEffect(() => {
     async function loadUserData() {
@@ -87,10 +100,10 @@ export default function QuestionsHistory() {
 
   const filteredQuestions = questionsWithAnswers.filter((question) => {
     const matchesStatus =
-      selectedStatus === 'Todas' ||
-      (selectedStatus === 'Corretas' && question.userAnswer.isCorrect) ||
-      (selectedStatus === 'Incorretas' && !question.userAnswer.isCorrect)
-    const matchesDiscipline = selectedDiscipline === 'all' || question.discipline === selectedDiscipline
+      debouncedStatus === 'Todas' ||
+      (debouncedStatus === 'Corretas' && question.userAnswer.isCorrect) ||
+      (debouncedStatus === 'Incorretas' && !question.userAnswer.isCorrect)
+    const matchesDiscipline = debouncedDiscipline === 'all' || question.discipline === debouncedDiscipline
     return matchesStatus && matchesDiscipline
   })
 
@@ -98,8 +111,10 @@ export default function QuestionsHistory() {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-6xl mx-auto space-y-6">
-          <div className="py-8 text-center">
-            <p className="text-muted-foreground">Carregando histórico...</p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 py-8">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <Skeleton key={i} className="h-40 w-full" />
+            ))}
           </div>
         </div>
       </div>

@@ -1,4 +1,24 @@
+import useSWR from 'swr'
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
+export function useExams() {
+  return useSWR(`${API_BASE_URL}/exams`, fetcher)
+}
+
+export function useExamByYear(year: string) {
+  return useSWR(year ? `${API_BASE_URL}/exams/${year}` : null, fetcher)
+}
+
+export function useQuestions(year: string, limit: number = 10, offset: number = 0, discipline?: string) {
+  let url = year ? `${API_BASE_URL}/exams/${year}/questions?limit=${limit}&offset=${offset}` : null
+  if (url && discipline) {
+    url += `&discipline=${discipline}`
+  }
+  return useSWR(url, fetcher)
+}
 
 export async function getExams() {
   try {
