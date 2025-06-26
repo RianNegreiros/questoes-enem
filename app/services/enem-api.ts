@@ -21,9 +21,13 @@ export async function getExamByYear(year: string) {
   return response.json()
 }
 
-export async function getQuestions(year: string, limit: number = 10, offset: number = 0) {
+export async function getQuestions(year: string, limit: number = 10, offset: number = 0, discipline?: string) {
   try {
-    const response = await fetch(`${API_BASE_URL}/exams/${year}/questions?limit=${limit}&offset=${offset}`)
+    let url = `${API_BASE_URL}/exams/${year}/questions?limit=${limit}&offset=${offset}`
+    if (discipline) {
+      url += `&discipline=${discipline}`
+    }
+    const response = await fetch(url)
     if (!response.ok) {
       throw new Error('Failed to fetch questions')
     }

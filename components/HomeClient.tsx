@@ -6,7 +6,7 @@ import { History, LogIn, LogOut, Moon, Sun, User } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
 
-import { getExams, getQuestions } from '@/app/services/enem-api'
+import { getExamByYear, getExams, getQuestions } from '@/app/services/enem-api'
 import { getUserAnswers, type UserAnswer } from '@/app/services/user-answers'
 import type { Exam } from '@/app/types/exam'
 import type { Question } from '@/app/types/question'
@@ -35,6 +35,8 @@ export default function HomeClient() {
   const router = useRouter()
   const { data: session } = authClient.useSession()
   const { theme, setTheme } = useTheme()
+  const [disciplines, setDisciplines] = useState<{ label: string; value: string }[]>([])
+  const [selectedDiscipline, setSelectedDiscipline] = useState<string>('')
 
   useEffect(() => {
     async function loadUserAnswers() {
@@ -85,17 +87,31 @@ export default function HomeClient() {
   }, [])
 
   useEffect(() => {
-    setCurrentPage(1)
+    async function loadDisciplines() {
+      if (!selectedYear) return
+      try {
+        const exam = await getExamByYear(selectedYear)
+        setDisciplines(exam.disciplines)
+        setSelectedDiscipline('')
+      } catch {
+        setDisciplines([])
+        setSelectedDiscipline('')
+      }
+    }
+    loadDisciplines()
   }, [selectedYear])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedYear, selectedDiscipline])
 
   useEffect(() => {
     async function loadQuestions() {
       if (!selectedYear) return
-
       setIsLoading(true)
       try {
         const offset = (currentPage - 1) * questionsPerPage
-        const data = await getQuestions(selectedYear, questionsPerPage, offset)
+        const data = await getQuestions(selectedYear, questionsPerPage, offset, selectedDiscipline || undefined)
         setQuestions(data.questions)
         setTotalQuestions(data.metadata?.total || 0)
       } catch (error) {
@@ -105,7 +121,7 @@ export default function HomeClient() {
       }
     }
     loadQuestions()
-  }, [selectedYear, currentPage])
+  }, [selectedYear, currentPage, selectedDiscipline])
 
   const totalPages = Math.ceil(totalQuestions / questionsPerPage)
 
@@ -196,6 +212,24 @@ export default function HomeClient() {
                 ))}
               </SelectContent>
             </Select>
+            {disciplines.length > 0 && (
+              <Select
+                value={selectedDiscipline || 'all'}
+                onValueChange={(value) => setSelectedDiscipline(value === 'all' ? '' : value)}
+              >
+                <SelectTrigger className="w-[280px]">
+                  <SelectValue placeholder="Selecione a disciplina" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as disciplinas</SelectItem>
+                  {disciplines.map((discipline) => (
+                    <SelectItem key={discipline.value} value={discipline.value}>
+                      {discipline.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {isLoading ? (
