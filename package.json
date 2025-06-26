@@ -9,8 +9,7 @@
     "lint": "eslint \"./**/*.+(ts|tsx)\"",
     "lint:fix": "eslint \"./**/*.+(ts|tsx)\" --fix",
     "format": "prettier . --write",
-    "format:check": "prettier . --check",
-    "postinstall": "prisma generate"
+    "format:check": "prettier . --check"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
