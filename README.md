@@ -12,8 +12,6 @@ Aplicação para responder questões do ENEM.
 2. Instale as dependências:
    ```bash
    npm install
-   # ou
-   yarn install
    ```
 
 ## Configuração
@@ -23,7 +21,7 @@ Crie um arquivo `.env.local` na raiz do projeto com o seguinte conteúdo:
 ```env
 NEXT_PUBLIC_API_URL=https://api.enem.dev/v1
 
-DATABASE_URL=
+DATABASE_URL="postgresql://postgres:postgres@db:5432/questoes_enem_dev"
 
 BETTER_AUTH_SECRET= # Sua chave secreta do Better Auth
 BETTER_AUTH_URL=http://localhost:3000
@@ -46,6 +44,7 @@ Para obter as credenciais necessárias, consulte:
 Sicronize seu banco de dados
 
 ```bash
+# Para produção use o comando migrate
 npx prisma db push
 ```
 
@@ -53,8 +52,14 @@ Inicie o servidor de desenvolvimento:
 
 ```bash
 npm run dev
-# ou
-yarn dev
+```
+
+## Docker
+
+Antes rodar o comando, comente a linha `"postinstall": "prisma generate"` no arquivo `package.json`. Este script é necessário apenas para o deploy na Vercel.
+
+```bash
+docker compose up -d
 ```
 
 Acesse em [http://localhost:3000](http://localhost:3000).
