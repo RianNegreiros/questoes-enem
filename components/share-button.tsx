@@ -21,7 +21,6 @@ export function ShareButton({ url, title }: ShareButtonProps) {
         console.error('Error sharing:', error)
       }
     } else {
-      // Fallback for browsers that don't support the Web Share API
       navigator.clipboard.writeText(url)
       alert('Link copiado para a área de transferência!')
     }

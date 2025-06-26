@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { BookOpen, CheckCircle, Filter, TrendingUp, XCircle } from 'lucide-react'
+import useSWRImmutable from 'swr/immutable'
 
 import { getQuestionById } from '@/app/services/enem-api'
 import { getUserAnswers, type UserAnswer } from '@/app/services/user-answers'
@@ -11,6 +12,15 @@ import type { Question } from '@/app/types/question'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { authClient } from '@/lib/auth-client'
@@ -44,59 +54,68 @@ export default function QuestionsHistory() {
   const debouncedStatus = useDebounce(selectedStatus, 300)
   const debouncedDiscipline = useDebounce(selectedDiscipline, 300)
 
+  const [userAnswers, setUserAnswers] = useState<Record<string, UserAnswer>>({})
+  const [answeredQuestionIds, setAnsweredQuestionIds] = useState<string[]>([])
+
   useEffect(() => {
-    async function loadUserData() {
+    async function loadUserAnswers() {
       if (!session) {
         router.push('/login')
         return
       }
-
+      setIsLoading(true)
       try {
-        setIsLoading(true)
-
-        const userAnswers = await getUserAnswers()
-        const answeredQuestionIds = Object.keys(userAnswers)
-
-        if (answeredQuestionIds.length === 0) {
-          setQuestionsWithAnswers([])
-          return
-        }
-
-        const questionsData: QuestionWithAnswer[] = []
-
-        for (const questionId of answeredQuestionIds) {
-          const [year, index] = questionId.split('-')
-          try {
-            const question = await getQuestionById(year, index)
-            questionsData.push({
-              ...question,
-              userAnswer: userAnswers[questionId],
-            })
-          } catch (error) {
-            console.error(`Failed to load question ${questionId}:`, error)
-          }
-        }
-
-        questionsData.sort(
-          (a, b) => new Date(b.userAnswer.answeredAt).getTime() - new Date(a.userAnswer.answeredAt).getTime()
-        )
-
-        setQuestionsWithAnswers(questionsData)
+        const answers = await getUserAnswers()
+        setUserAnswers(answers)
+        setAnsweredQuestionIds(Object.keys(answers))
       } catch (error) {
-        console.error('Failed to load user data:', error)
+        console.error(error)
+        setUserAnswers({})
+        setAnsweredQuestionIds([])
       } finally {
         setIsLoading(false)
       }
     }
-
-    loadUserData()
+    loadUserAnswers()
   }, [session, router])
 
-  // Get all unique disciplines from loaded questions
+  const { data: questionsData, isLoading: isQuestionsLoading } = useSWRImmutable(
+    answeredQuestionIds.length > 0 ? ['questions-history', ...answeredQuestionIds] : null,
+    async () => {
+      const results = await Promise.all(
+        answeredQuestionIds.map(async (questionId) => {
+          const [year, index] = questionId.split('-')
+          try {
+            const question = await getQuestionById(year, index)
+            return {
+              ...question,
+              userAnswer: userAnswers[questionId],
+            }
+          } catch {
+            return null
+          }
+        })
+      )
+      return results
+        .filter((q): q is QuestionWithAnswer => !!q)
+        .sort((a, b) => new Date(b.userAnswer.answeredAt).getTime() - new Date(a.userAnswer.answeredAt).getTime())
+    },
+    { revalidateOnFocus: false }
+  )
+
+  useEffect(() => {
+    if (questionsData) {
+      setQuestionsWithAnswers(questionsData)
+    }
+  }, [questionsData])
+
   const allDisciplines = Array.from(new Map(questionsWithAnswers.map((q) => [q.discipline, q])).values()).map((q) => ({
     value: q.discipline,
     label: q.discipline,
   }))
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const questionsPerPage = 10
 
   const filteredQuestions = questionsWithAnswers.filter((question) => {
     const matchesStatus =
@@ -107,7 +126,13 @@ export default function QuestionsHistory() {
     return matchesStatus && matchesDiscipline
   })
 
-  if (isLoading) {
+  const totalPages = Math.ceil(filteredQuestions.length / questionsPerPage)
+  const paginatedQuestions = filteredQuestions.slice(
+    (currentPage - 1) * questionsPerPage,
+    currentPage * questionsPerPage
+  )
+
+  if (isLoading || isQuestionsLoading || !questionsData) {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-6xl mx-auto space-y-6">
@@ -178,7 +203,7 @@ export default function QuestionsHistory() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {filteredQuestions.map((question) => (
+              {paginatedQuestions.map((question) => (
                 <Link
                   href={`/question/${question.year}-${question.index}`}
                   key={`${question.year}-${question.index}`}
@@ -225,13 +250,68 @@ export default function QuestionsHistory() {
                 </Link>
               ))}
 
-              {filteredQuestions.length === 0 && (
+              {paginatedQuestions.length === 0 && (
                 <div className="py-8 text-center text-muted-foreground">
                   <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Nenhuma questão encontrada com os filtros aplicados.</p>
                 </div>
               )}
             </div>
+            {/* Pagination controls */}
+            {totalPages > 1 && (
+              <div className="mt-8 flex justify-center">
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        aria-disabled={currentPage === 1}
+                        tabIndex={currentPage === 1 ? -1 : 0}
+                        style={{
+                          pointerEvents: currentPage === 1 ? 'none' : undefined,
+                          opacity: currentPage === 1 ? 0.5 : 1,
+                        }}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: totalPages }).map((_, idx) => {
+                      const page = idx + 1
+                      if (page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1) {
+                        return (
+                          <PaginationItem key={page}>
+                            <PaginationLink
+                              isActive={page === currentPage}
+                              onClick={() => setCurrentPage(page)}
+                              aria-current={page === currentPage ? 'page' : undefined}
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        )
+                      }
+                      if ((page === currentPage - 2 && page > 1) || (page === currentPage + 2 && page < totalPages)) {
+                        return (
+                          <PaginationItem key={`ellipsis-${page}`}>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        )
+                      }
+                      return null
+                    })}
+                    <PaginationItem>
+                      <PaginationNext
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        aria-disabled={currentPage === totalPages}
+                        tabIndex={currentPage === totalPages ? -1 : 0}
+                        style={{
+                          pointerEvents: currentPage === totalPages ? 'none' : undefined,
+                          opacity: currentPage === totalPages ? 0.5 : 1,
+                        }}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </CardContent>
         </Card>
 

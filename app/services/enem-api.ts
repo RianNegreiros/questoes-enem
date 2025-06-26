@@ -67,6 +67,16 @@ export async function getQuestionById(year: string, index: string) {
     return response.json()
   } catch (error) {
     console.error('Error fetching question:', error)
+    console.error(`Failed to load question ${year}, ${index}:`, error)
     throw error
   }
+}
+
+export function useQuestionById(year: string, index: string) {
+  const shouldFetch = Boolean(year && index)
+  const { data, error, isLoading } = useSWR(
+    shouldFetch ? `${API_BASE_URL}/exams/${year}/questions/${index}` : null,
+    fetcher
+  )
+  return { data, error, isLoading }
 }
