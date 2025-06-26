@@ -1,21 +1,28 @@
 # Questões ENEM
 
-Aplicação web para responder questões do ENEM, acompanhar histórico. 
+Aplicação web para praticar questões do ENEM e acompanhar o histórico de respostas do usuário.
+
+## Funcionalidades
+
+- Responder questões do ENEM por ano e disciplina
+- Histórico de respostas com filtros
+- Autenticação via Google ou email com One-Time Password (OTP)
+- Progresso salvo por usuário
 
 ## Tecnologias
 
-- [Next.js](https://nextjs.org/)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Prisma ORM](https://www.prisma.io/)
-- [PostgreSQL](https://www.postgresql.org/)
-- [Better Auth](https://www.better-auth.com/)
-- [Resend](https://resend.com/)
+- Next.js
+- TypeScript
+- Tailwind CSS
+- Prisma ORM
+- PostgreSQL
+- Better Auth (autenticação)
+- Resend (envio de emails)
 
 ## Pré-requisitos
 
 - Node.js >= 18.x
-- Docker (opcional, para ambiente containerizado)
+- Docker (opcional)
 
 ## Instalação
 
@@ -29,25 +36,26 @@ Aplicação web para responder questões do ENEM, acompanhar histórico.
    npm install
    ```
 
-## Configuração do Ambiente
+## Configuração
 
 Crie um arquivo `.env.local` na raiz do projeto com o seguinte conteúdo:
 
 ```env
-NEXT_PUBLIC_API_URL=https://enem-api-woad.vercel.app/v1 # URL da API de questões
-DATABASE_URL="postgresql://postgres:postgres@db:5432/questoes_enem_dev" # String de conexão do banco
-BETTER_AUTH_SECRET= # Chave secreta do Better Auth
-BETTER_AUTH_URL=http://localhost:3000 # URL do Better Auth
-GOOGLE_CLIENT_ID= # ID do cliente Google
-GOOGLE_CLIENT_SECRET= # Segredo do cliente Google
-RESEND_API_KEY= # Chave da API Resend
-RESEND_DOMAIN= # Domínio Resend
+NEXT_PUBLIC_API_URL=https://enem-api-woad.vercel.app/v1
+DATABASE_URL="postgresql://postgres:postgres@db:5432/questoes_enem_dev"
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+RESEND_API_KEY=
+RESEND_DOMAIN=
 ```
 
-> Consulte a documentação dos serviços para obter as credenciais:
-> - [Better Auth: Variáveis de ambiente](https://www.better-auth.com/docs/installation#set-environment-variables)
-> - [Credenciais Google](https://www.better-auth.com/docs/authentication/google#get-your-google-credentials)
-> - [Resend API key](https://resend.com/docs/dashboard/api-keys/introduction)
+Consulte a documentação dos serviços para obter as credenciais:
+
+- Better Auth: https://www.better-auth.com/docs/installation#set-environment-variables
+- Google: https://www.better-auth.com/docs/authentication/google#get-your-google-credentials
+- Resend: https://resend.com/docs/dashboard/api-keys/introduction
 
 ## Banco de Dados
 
@@ -57,27 +65,32 @@ Sincronize o banco de dados localmente:
 npx prisma db push
 ```
 
-> Para produção, utilize migrations:
-> ```bash
-> npx prisma migrate deploy
-> ```
+Para produção, use:
+
+```bash
+npx prisma migrate deploy
+```
 
 ## Uso
 
-### Ambiente de desenvolvimento
+### Desenvolvimento
 
 ```bash
 npm run dev
 ```
 
-### Usando Docker
+### Docker
 
 ```bash
 docker compose up -d
 ```
 
-Acesse em [http://localhost:3000](http://localhost:3000).
+Acesse em http://localhost:3000
+
+## API de Questões
+
+A aplicação consome a API `https://enem-api-woad.vercel.app/v1` para buscar provas e questões do ENEM. [Documentação Original](https://docs.enem.dev/introduction) (Sem filtro de questões por disciplina)
 
 ## Agradecimento
 
-Esta aplicação utiliza uma API baseada em um fork do repositório [yunger7/enem-api](https://github.com/yunger7/enem-api), com a adição de um endpoint para buscar questões por disciplina. Agradecimento ao autor original pelo excelente trabalho!
+Esta aplicação utiliza uma API baseada em um fork do repositório [yunger7/enem-api](https://github.com/yunger7/enem-api), com a adição de um endpoint para buscar questões por disciplina.
