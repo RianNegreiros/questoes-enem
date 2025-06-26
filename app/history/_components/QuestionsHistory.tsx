@@ -21,6 +21,7 @@ interface QuestionWithAnswer extends Question {
 
 export default function QuestionsHistory() {
   const [selectedStatus, setSelectedStatus] = useState('Todas')
+  const [selectedDiscipline, setSelectedDiscipline] = useState('all')
   const [questionsWithAnswers, setQuestionsWithAnswers] = useState<QuestionWithAnswer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
@@ -78,13 +79,19 @@ export default function QuestionsHistory() {
     loadUserData()
   }, [session, router])
 
+  // Get all unique disciplines from loaded questions
+  const allDisciplines = Array.from(new Map(questionsWithAnswers.map((q) => [q.discipline, q])).values()).map((q) => ({
+    value: q.discipline,
+    label: q.discipline,
+  }))
+
   const filteredQuestions = questionsWithAnswers.filter((question) => {
     const matchesStatus =
       selectedStatus === 'Todas' ||
       (selectedStatus === 'Corretas' && question.userAnswer.isCorrect) ||
       (selectedStatus === 'Incorretas' && !question.userAnswer.isCorrect)
-
-    return matchesStatus
+    const matchesDiscipline = selectedDiscipline === 'all' || question.discipline === selectedDiscipline
+    return matchesStatus && matchesDiscipline
   })
 
   if (isLoading) {
@@ -126,6 +133,22 @@ export default function QuestionsHistory() {
                     <SelectItem value="Todas">Todas</SelectItem>
                     <SelectItem value="Corretas">Corretas</SelectItem>
                     <SelectItem value="Incorretas">Incorretas</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Disciplina</label>
+                <Select value={selectedDiscipline} onValueChange={setSelectedDiscipline}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a disciplina" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as disciplinas</SelectItem>
+                    {allDisciplines.map((discipline) => (
+                      <SelectItem key={discipline.value} value={discipline.value}>
+                        {discipline.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
