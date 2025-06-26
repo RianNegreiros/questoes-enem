@@ -1,0 +1,12 @@
+node_modules
+.next
+.env
+*.env.local
+Dockerfile.dev
+docker-compose.yml
+dockerignore
+README.md
+eslint.config.mjs
+prettier.config.js
+.prettierrc
+tsconfig.json
