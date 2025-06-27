@@ -24,27 +24,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { authClient } from '@/lib/auth-client'
 
+const QUESTIONS_PER_PAGE = 10
+
 export default function HomeClient() {
   const [userAnswers, setUserAnswers] = useState<Record<string, UserAnswer>>({})
   const [currentPage, setCurrentPage] = useState(1)
-  const questionsPerPage = 10
   const [questions, setQuestions] = useState<Question[]>([])
   const [years, setYears] = useState<string[]>([])
   const [selectedYear, setSelectedYear] = useState<string>('')
   const [totalQuestions, setTotalQuestions] = useState(0)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const { data: session } = authClient.useSession()
   const { theme, setTheme } = useTheme()
   const [disciplines, setDisciplines] = useState<{ label: string; value: string }[]>([])
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>('')
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('all')
 
   const { data: examsData } = useExams()
   const { data: examData } = useExamByYear(selectedYear)
-  const { data: questionsData, isLoading: isQuestionsLoading } = useQuestions(
+  const {
+    data: questionsData,
+    isLoading: isQuestionsLoading,
+    error: questionsError,
+  } = useQuestions(
     selectedYear,
-    questionsPerPage,
-    currentPage ? (currentPage - 1) * questionsPerPage : 0,
-    selectedDiscipline || undefined
+    QUESTIONS_PER_PAGE,
+    currentPage ? (currentPage - 1) * QUESTIONS_PER_PAGE : 0,
+    selectedDiscipline || undefined,
+    selectedLanguage !== 'all' ? selectedLanguage : undefined
   )
 
   useEffect(() => {
@@ -54,6 +62,7 @@ export default function HomeClient() {
           const answers = await getUserAnswers()
           setUserAnswers(answers)
         } catch (error) {
+          setError('Failed to load saved answers.')
           console.error('Failed to load saved answers:', error)
         }
       }
@@ -98,16 +107,32 @@ export default function HomeClient() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [selectedYear, selectedDiscipline])
+  }, [selectedYear, selectedDiscipline, selectedLanguage])
 
   useEffect(() => {
+    if (questionsError) {
+      setError('Erro ao carregar as questões. Tente novamente.')
+    } else {
+      setError(null)
+    }
     if (questionsData) {
       setQuestions(questionsData.questions)
       setTotalQuestions(questionsData.metadata?.total || 0)
+      const totalPages = Math.max(1, Math.ceil((questionsData.metadata?.total || 0) / QUESTIONS_PER_PAGE))
+      if (questionsData.questions.length === 0 && totalQuestions > 0 && currentPage > totalPages) {
+        setCurrentPage(totalPages)
+      }
     }
-  }, [questionsData])
+  }, [questionsData, questionsError, currentPage, totalQuestions])
 
-  const totalPages = Math.ceil(totalQuestions / questionsPerPage)
+  useEffect(() => {
+    const isLinguagens = selectedDiscipline === 'linguagens'
+    if (selectedDiscipline && selectedDiscipline !== 'all' && !isLinguagens && selectedLanguage !== 'all') {
+      setSelectedLanguage('all')
+    }
+  }, [selectedDiscipline, disciplines, selectedLanguage])
+
+  const totalPages = Math.ceil(totalQuestions / QUESTIONS_PER_PAGE)
 
   const handleAnswerUpdate = (questionId: string, answer: UserAnswer) => {
     setUserAnswers((prev) => ({
@@ -214,16 +239,31 @@ export default function HomeClient() {
                 </SelectContent>
               </Select>
             )}
+            {(selectedDiscipline === '' || selectedDiscipline === 'all' || selectedDiscipline === 'linguagens') && (
+              <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Idioma" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os idiomas</SelectItem>
+                  <SelectItem value="ingles">Inglês</SelectItem>
+                  <SelectItem value="espanhol">Espanhol</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
+
+          {error && <div className="text-red-500 text-center py-2">{error}</div>}
 
           {isQuestionsLoading ? (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 py-8">
-              {Array.from({ length: questionsPerPage }).map((_, i) => (
+              {Array.from({ length: QUESTIONS_PER_PAGE }).map((_, i) => (
                 <Skeleton key={i} className="h-40 w-full" />
               ))}
             </div>
           ) : (
             <QuestionList
+              key={`${selectedYear}-${selectedDiscipline}-${selectedLanguage}`}
               questions={questions}
               userAnswers={userAnswers}
               onAnswerUpdate={handleAnswerUpdate}

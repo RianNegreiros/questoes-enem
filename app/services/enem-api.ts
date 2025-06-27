@@ -12,10 +12,19 @@ export function useExamByYear(year: string) {
   return useSWR(year ? `${API_BASE_URL}/exams/${year}` : null, fetcher)
 }
 
-export function useQuestions(year: string, limit: number = 10, offset: number = 0, discipline?: string) {
+export function useQuestions(
+  year: string,
+  limit: number = 10,
+  offset: number = 0,
+  discipline?: string,
+  language?: string
+) {
   let url = year ? `${API_BASE_URL}/exams/${year}/questions?limit=${limit}&offset=${offset}` : null
   if (url && discipline) {
     url += `&discipline=${discipline}`
+  }
+  if (url && language) {
+    url += `&language=${language}`
   }
   return useSWR(url, fetcher)
 }
@@ -41,11 +50,20 @@ export async function getExamByYear(year: string) {
   return response.json()
 }
 
-export async function getQuestions(year: string, limit: number = 10, offset: number = 0, discipline?: string) {
+export async function getQuestions(
+  year: string,
+  limit: number = 10,
+  offset: number = 0,
+  discipline?: string,
+  language?: string
+) {
   try {
     let url = `${API_BASE_URL}/exams/${year}/questions?limit=${limit}&offset=${offset}`
     if (discipline) {
       url += `&discipline=${discipline}`
+    }
+    if (language) {
+      url += `&language=${language}`
     }
     const response = await fetch(url)
     if (!response.ok) {
