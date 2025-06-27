@@ -41,7 +41,7 @@ Aplicação web para praticar questões do ENEM e acompanhar o histórico de res
 Crie um arquivo `.env.local` na raiz do projeto com o seguinte conteúdo:
 
 ```env
-NEXT_PUBLIC_API_URL=https://enem-api-woad.vercel.app/v1
+NEXT_PUBLIC_API_URL=https://api.enem.dev/v1
 DATABASE_URL="postgresql://postgres:postgres@db:5432/questoes_enem_dev"
 BETTER_AUTH_SECRET=
 BETTER_AUTH_URL=http://localhost:3000
@@ -85,11 +85,11 @@ npm run dev
 docker compose up -d
 ```
 
-Acesse em http://localhost:3000
+Acesse em `http://localhost:3000`
 
 ## API de Questões
 
-A aplicação consome a API `https://enem-api-woad.vercel.app/v1` para buscar provas e questões do ENEM. [Documentação Original](https://docs.enem.dev/introduction) (Sem filtro de questões por disciplina)
+A aplicação consome a API do repositório `https://github.com/RianNegreiros/enem-api.git` para buscar provas e questões do ENEM. [Documentação Original](https://docs.enem.dev/introduction) (Sem filtro de questões por disciplina)
 
 ## Agradecimento
 
