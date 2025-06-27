@@ -98,3 +98,22 @@ export function useQuestionById(year: string, index: string) {
   )
   return { data, error, isLoading }
 }
+
+export async function getQuestionsByIndices(year: string, indices: number[]) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/exams/${year}/questions?limit=${indices.length}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ indices }),
+    })
+    if (!response.ok) {
+      throw new Error('Failed to fetch questions by indices')
+    }
+    return response.json()
+  } catch (error) {
+    console.error('Error fetching questions by indices:', error)
+    throw error
+  }
+}

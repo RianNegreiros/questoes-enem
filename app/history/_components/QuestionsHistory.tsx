@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation'
 import { BookOpen, CheckCircle, Filter, TrendingUp, XCircle } from 'lucide-react'
 import useSWRImmutable from 'swr/immutable'
 
-import { getQuestionById } from '@/app/services/enem-api'
+import { getQuestionsByIndices, useExams } from '@/app/services/enem-api'
 import { getUserAnswers, type UserAnswer } from '@/app/services/user-answers'
+import type { Discipline, Exam } from '@/app/types/exam'
 import type { Question } from '@/app/types/question'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -57,6 +58,8 @@ export default function QuestionsHistory() {
   const [userAnswers, setUserAnswers] = useState<Record<string, UserAnswer>>({})
   const [answeredQuestionIds, setAnsweredQuestionIds] = useState<string[]>([])
 
+  const { data: examsData } = useExams()
+
   useEffect(() => {
     async function loadUserAnswers() {
       if (!session) {
@@ -82,21 +85,28 @@ export default function QuestionsHistory() {
   const { data: questionsData, isLoading: isQuestionsLoading } = useSWRImmutable(
     answeredQuestionIds.length > 0 ? ['questions-history', ...answeredQuestionIds] : null,
     async () => {
-      const results = await Promise.all(
-        answeredQuestionIds.map(async (questionId) => {
-          const [year, index] = questionId.split('-')
-          try {
-            const question = await getQuestionById(year, index)
-            return {
-              ...question,
-              userAnswer: userAnswers[questionId],
-            }
-          } catch {
-            return null
+      const yearToIndices: Record<string, number[]> = {}
+      answeredQuestionIds.forEach((questionId) => {
+        const [year, index] = questionId.split('-')
+        if (!yearToIndices[year]) yearToIndices[year] = []
+        yearToIndices[year].push(Number(index))
+      })
+
+      let allQuestions: QuestionWithAnswer[] = []
+      for (const year in yearToIndices) {
+        try {
+          const data = await getQuestionsByIndices(year, yearToIndices[year])
+          if (data && data.questions) {
+            allQuestions = allQuestions.concat(
+              data.questions.map((question: Question) => ({
+                ...question,
+                userAnswer: userAnswers[`${question.year}-${question.index}`],
+              }))
+            )
           }
-        })
-      )
-      return results
+        } catch {}
+      }
+      return allQuestions
         .filter((q): q is QuestionWithAnswer => !!q)
         .sort((a, b) => new Date(b.userAnswer.answeredAt).getTime() - new Date(a.userAnswer.answeredAt).getTime())
     },
@@ -109,10 +119,14 @@ export default function QuestionsHistory() {
     }
   }, [questionsData])
 
-  const allDisciplines = Array.from(new Map(questionsWithAnswers.map((q) => [q.discipline, q])).values()).map((q) => ({
-    value: q.discipline,
-    label: q.discipline,
-  }))
+  const allDisciplines: Discipline[] = examsData
+    ? Array.from(
+        examsData
+          .flatMap((exam: Exam) => exam.disciplines)
+          .reduce((map: Map<string, Discipline>, d: Discipline) => map.set(d.value, d), new Map<string, Discipline>())
+          .values()
+      )
+    : []
 
   const [currentPage, setCurrentPage] = useState(1)
   const questionsPerPage = 10
@@ -257,7 +271,6 @@ export default function QuestionsHistory() {
                 </div>
               )}
             </div>
-            {/* Pagination controls */}
             {totalPages > 1 && (
               <div className="mt-8 flex justify-center">
                 <Pagination>
