@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 
 import { useExamByYear, useExams, useQuestions } from '@/app/services/enem-api'
 import { getUserAnswers, type UserAnswer } from '@/app/services/user-answers'
-import type { Exam } from '@/app/types/exam'
+import type { Discipline, Exam } from '@/app/types/exam'
 import type { Question } from '@/app/types/question'
 import { QuestionList } from '@/components/question-list'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -37,7 +37,7 @@ export default function HomeClient() {
   const router = useRouter()
   const { data: session } = authClient.useSession()
   const { theme, setTheme } = useTheme()
-  const [disciplines, setDisciplines] = useState<{ label: string; value: string }[]>([])
+  const [disciplines, setDisciplines] = useState<Discipline[]>([])
   const [selectedDiscipline, setSelectedDiscipline] = useState<string>('')
   const [selectedLanguage, setSelectedLanguage] = useState<string>('all')
 

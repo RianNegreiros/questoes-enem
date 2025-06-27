@@ -8,7 +8,7 @@ export interface Exam {
   questions: Question[]
 }
 
-interface Discipline {
+export interface Discipline {
   label: string
   value: string
 }
