@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { BookOpen, CheckCircle, Filter, TrendingUp, XCircle } from 'lucide-react'
@@ -40,32 +40,21 @@ function useDebounce<T>(value: T, delay: number) {
   return debouncedValue
 }
 
-export default function QuestionsHistory() {
-  const [selectedStatus, setSelectedStatus] = useState('Todas')
-  const [selectedDiscipline, setSelectedDiscipline] = useState('all')
-  const [questionsWithAnswers, setQuestionsWithAnswers] = useState<QuestionWithAnswer[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const router = useRouter()
-  const { data: session } = authClient.useSession()
-
-  const getAlternativeLetter = useCallback((index: number) => {
-    return String.fromCharCode(65 + index)
-  }, [])
-
-  const debouncedStatus = useDebounce(selectedStatus, 300)
-  const debouncedDiscipline = useDebounce(selectedDiscipline, 300)
-
+function useUserAnswers() {
   const [userAnswers, setUserAnswers] = useState<Record<string, UserAnswer>>({})
   const [answeredQuestionIds, setAnsweredQuestionIds] = useState<string[]>([])
-
-  const { data: examsData } = useExams()
+  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
+  const { data: session, isPending } = authClient.useSession()
 
   useEffect(() => {
     async function loadUserAnswers() {
+      if (isPending) return
       if (!session) {
         router.push('/login')
         return
       }
+
       setIsLoading(true)
       try {
         const answers = await getUserAnswers()
@@ -80,25 +69,33 @@ export default function QuestionsHistory() {
       }
     }
     loadUserAnswers()
-  }, [session, router])
+  }, [session, isPending, router])
 
-  const { data: questionsData, isLoading: isQuestionsLoading } = useSWRImmutable(
+  return { userAnswers, answeredQuestionIds, isLoading, isPending }
+}
+
+function useQuestionsData(answeredQuestionIds: string[], userAnswers: Record<string, UserAnswer>) {
+  return useSWRImmutable(
     answeredQuestionIds.length > 0 ? ['questions-history', ...answeredQuestionIds] : null,
     async () => {
-      const yearToIndices: Record<string, number[]> = {}
-      answeredQuestionIds.forEach((questionId) => {
-        const [year, index] = questionId.split('-')
-        if (!yearToIndices[year]) yearToIndices[year] = []
-        yearToIndices[year].push(Number(index))
-      })
+      const yearToIndices = answeredQuestionIds.reduce(
+        (acc, questionId) => {
+          const [year, index] = questionId.split('-')
+          if (!acc[year]) acc[year] = []
+          acc[year].push(Number(index))
+          return acc
+        },
+        {} as Record<string, number[]>
+      )
 
-      let allQuestions: QuestionWithAnswer[] = []
-      for (const year in yearToIndices) {
+      const allQuestions: QuestionWithAnswer[] = []
+
+      for (const [year, indices] of Object.entries(yearToIndices)) {
         try {
-          const data = await getQuestionsByIndices(year, yearToIndices[year])
-          if (data && data.questions) {
-            allQuestions = allQuestions.concat(
-              data.questions.map((question: Question) => ({
+          const data = await getQuestionsByIndices(year, indices)
+          if (data?.questions) {
+            allQuestions.push(
+              ...data.questions.map((question: Question) => ({
                 ...question,
                 userAnswer: userAnswers[`${question.year}-${question.index}`],
               }))
@@ -106,32 +103,42 @@ export default function QuestionsHistory() {
           }
         } catch {}
       }
+
       return allQuestions
-        .filter((q): q is QuestionWithAnswer => !!q)
+        .filter(Boolean)
         .sort((a, b) => new Date(b.userAnswer.answeredAt).getTime() - new Date(a.userAnswer.answeredAt).getTime())
     },
     { revalidateOnFocus: false }
   )
+}
 
-  useEffect(() => {
-    if (questionsData) {
-      setQuestionsWithAnswers(questionsData)
-    }
-  }, [questionsData])
+function useDisciplines(): Discipline[] {
+  const { data: examsData } = useExams()
 
-  const allDisciplines: Discipline[] = examsData
+  return examsData
     ? Array.from(
         examsData
           .flatMap((exam: Exam) => exam.disciplines)
-          .reduce((map: Map<string, Discipline>, d: Discipline) => map.set(d.value, d), new Map<string, Discipline>())
+          .reduce(
+            (map: Map<string, Discipline>, discipline: Discipline) => map.set(discipline.value, discipline),
+            new Map<string, Discipline>()
+          )
           .values()
       )
     : []
+}
 
-  const [currentPage, setCurrentPage] = useState(1)
-  const questionsPerPage = 10
+function useFilteredQuestions(
+  questions: QuestionWithAnswer[],
+  status: string,
+  discipline: string,
+  currentPage: number,
+  questionsPerPage: number
+) {
+  const debouncedStatus = useDebounce(status, 300)
+  const debouncedDiscipline = useDebounce(discipline, 300)
 
-  const filteredQuestions = questionsWithAnswers.filter((question) => {
+  const filteredQuestions = questions.filter((question) => {
     const matchesStatus =
       debouncedStatus === 'Todas' ||
       (debouncedStatus === 'Corretas' && question.userAnswer.isCorrect) ||
@@ -146,18 +153,218 @@ export default function QuestionsHistory() {
     currentPage * questionsPerPage
   )
 
-  if (isLoading || isQuestionsLoading || !questionsData) {
-    return (
-      <div className="min-h-screen bg-background p-4">
-        <div className="max-w-6xl mx-auto space-y-6">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 py-8">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <Skeleton key={i} className="h-40 w-full" />
-            ))}
+  return { filteredQuestions, paginatedQuestions, totalPages }
+}
+
+const getAlternativeLetter = (index: number) => String.fromCharCode(65 + index)
+
+function LoadingSkeleton() {
+  return (
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-6xl mx-auto space-y-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 py-8">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 w-full" />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FiltersSection({
+  selectedStatus,
+  setSelectedStatus,
+  selectedDiscipline,
+  setSelectedDiscipline,
+  allDisciplines,
+}: {
+  selectedStatus: string
+  setSelectedStatus: (value: string) => void
+  selectedDiscipline: string
+  setSelectedDiscipline: (value: string) => void
+  allDisciplines: Discipline[]
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Filter className="h-5 w-5" />
+          Filtros
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Status</label>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Todas">Todas</SelectItem>
+                <SelectItem value="Corretas">Corretas</SelectItem>
+                <SelectItem value="Incorretas">Incorretas</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Disciplina</label>
+            <Select value={selectedDiscipline} onValueChange={setSelectedDiscipline}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a disciplina" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as disciplinas</SelectItem>
+                {allDisciplines.map((discipline) => (
+                  <SelectItem key={discipline.value} value={discipline.value}>
+                    {discipline.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function QuestionCard({ question }: { question: QuestionWithAnswer }) {
+  return (
+    <Link
+      href={`/question/${question.year}-${question.index}`}
+      className={cn(
+        'block rounded-lg border p-4 transition-colors',
+        question.userAnswer.isCorrect
+          ? 'border-green-200 bg-green-50 hover:bg-green-100/50 dark:border-green-800 dark:bg-green-950/20 dark:hover:bg-green-900/50'
+          : 'border-red-200 bg-red-50 hover:bg-red-100/50 dark:border-red-800 dark:bg-red-950/20 dark:hover:bg-red-900/50'
+      )}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">{question.discipline}</Badge>
+            <Badge variant="outline">{question.year}</Badge>
+            {question.userAnswer.isCorrect ? (
+              <Badge className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-900">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Correta
+              </Badge>
+            ) : (
+              <Badge className="bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-900">
+                <XCircle className="h-3 w-3 mr-1" />
+                Incorreta
+              </Badge>
+            )}
+          </div>
+          <p className="font-medium text-foreground">{question.title}</p>
+          <div className="flex items-center gap-4 text-sm">
+            <span className="text-foreground">
+              <strong>Sua resposta:</strong> {getAlternativeLetter(question.userAnswer.answerIndex)}
+            </span>
+            {!question.userAnswer.isCorrect && (
+              <span className="text-green-600 dark:text-green-400">
+                <strong>Resposta correta:</strong> {question.correctAlternative}
+              </span>
+            )}
           </div>
         </div>
       </div>
-    )
+    </Link>
+  )
+}
+
+function PaginationSection({
+  currentPage,
+  totalPages,
+  setCurrentPage,
+}: {
+  currentPage: number
+  totalPages: number
+  setCurrentPage: (page: number) => void
+}) {
+  if (totalPages <= 1) return null
+
+  return (
+    <div className="mt-8 flex justify-center">
+      <Pagination>
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              aria-disabled={currentPage === 1}
+              tabIndex={currentPage === 1 ? -1 : 0}
+              style={{
+                pointerEvents: currentPage === 1 ? 'none' : undefined,
+                opacity: currentPage === 1 ? 0.5 : 1,
+              }}
+            />
+          </PaginationItem>
+          {Array.from({ length: totalPages }).map((_, idx) => {
+            const page = idx + 1
+            if (page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1) {
+              return (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    isActive={page === currentPage}
+                    onClick={() => setCurrentPage(page)}
+                    aria-current={page === currentPage ? 'page' : undefined}
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              )
+            }
+            if ((page === currentPage - 2 && page > 1) || (page === currentPage + 2 && page < totalPages)) {
+              return (
+                <PaginationItem key={`ellipsis-${page}`}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              )
+            }
+            return null
+          })}
+          <PaginationItem>
+            <PaginationNext
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              aria-disabled={currentPage === totalPages}
+              tabIndex={currentPage === totalPages ? -1 : 0}
+              style={{
+                pointerEvents: currentPage === totalPages ? 'none' : undefined,
+                opacity: currentPage === totalPages ? 0.5 : 1,
+              }}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    </div>
+  )
+}
+
+export default function QuestionsHistory() {
+  const [selectedStatus, setSelectedStatus] = useState('Todas')
+  const [selectedDiscipline, setSelectedDiscipline] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const router = useRouter()
+
+  const { userAnswers, answeredQuestionIds, isLoading, isPending } = useUserAnswers()
+  const { data: questionsData, isLoading: isQuestionsLoading } = useQuestionsData(answeredQuestionIds, userAnswers)
+  const allDisciplines = useDisciplines()
+  const { filteredQuestions, paginatedQuestions, totalPages } = useFilteredQuestions(
+    questionsData || [],
+    selectedStatus,
+    selectedDiscipline,
+    currentPage,
+    10
+  )
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedStatus, selectedDiscipline])
+
+  if (isLoading || isQuestionsLoading || !questionsData || isPending) {
+    return <LoadingSkeleton />
   }
 
   return (
@@ -168,47 +375,13 @@ export default function QuestionsHistory() {
           <p className="text-muted-foreground">Acompanhe seu progresso e desempenho nas questões respondidas</p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              Filtros
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Todas">Todas</SelectItem>
-                    <SelectItem value="Corretas">Corretas</SelectItem>
-                    <SelectItem value="Incorretas">Incorretas</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Disciplina</label>
-                <Select value={selectedDiscipline} onValueChange={setSelectedDiscipline}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a disciplina" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as disciplinas</SelectItem>
-                    {allDisciplines.map((discipline) => (
-                      <SelectItem key={discipline.value} value={discipline.value}>
-                        {discipline.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <FiltersSection
+          selectedStatus={selectedStatus}
+          setSelectedStatus={setSelectedStatus}
+          selectedDiscipline={selectedDiscipline}
+          setSelectedDiscipline={setSelectedDiscipline}
+          allDisciplines={allDisciplines}
+        />
 
         <Card>
           <CardHeader>
@@ -218,50 +391,7 @@ export default function QuestionsHistory() {
           <CardContent>
             <div className="space-y-4">
               {paginatedQuestions.map((question) => (
-                <Link
-                  href={`/question/${question.year}-${question.index}`}
-                  key={`${question.year}-${question.index}`}
-                  className={cn(
-                    'block rounded-lg border p-4 transition-colors',
-                    question.userAnswer.isCorrect
-                      ? 'border-green-200 bg-green-50 hover:bg-green-100/50 dark:border-green-800 dark:bg-green-950/20 dark:hover:bg-green-900/50'
-                      : 'border-red-200 bg-red-50 hover:bg-red-100/50 dark:border-red-800 dark:bg-red-950/20 dark:hover:bg-red-900/50'
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="secondary">{question.discipline}</Badge>
-                        <Badge variant="outline">{question.year}</Badge>
-
-                        {question.userAnswer.isCorrect ? (
-                          <Badge className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900 dark:text-green-200 dark:hover:bg-green-900">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Correta
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-900">
-                            <XCircle className="h-3 w-3 mr-1" />
-                            Incorreta
-                          </Badge>
-                        )}
-                      </div>
-
-                      <p className="font-medium text-foreground">{question.title}</p>
-
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="text-foreground">
-                          <strong>Sua resposta:</strong> {getAlternativeLetter(question.userAnswer.answerIndex)}
-                        </span>
-                        {!question.userAnswer.isCorrect && (
-                          <span className="text-green-600 dark:text-green-400">
-                            <strong>Resposta correta:</strong> {question.correctAlternative}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+                <QuestionCard key={`${question.year}-${question.index}`} question={question} />
               ))}
 
               {paginatedQuestions.length === 0 && (
@@ -271,60 +401,8 @@ export default function QuestionsHistory() {
                 </div>
               )}
             </div>
-            {totalPages > 1 && (
-              <div className="mt-8 flex justify-center">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                        aria-disabled={currentPage === 1}
-                        tabIndex={currentPage === 1 ? -1 : 0}
-                        style={{
-                          pointerEvents: currentPage === 1 ? 'none' : undefined,
-                          opacity: currentPage === 1 ? 0.5 : 1,
-                        }}
-                      />
-                    </PaginationItem>
-                    {Array.from({ length: totalPages }).map((_, idx) => {
-                      const page = idx + 1
-                      if (page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1) {
-                        return (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              isActive={page === currentPage}
-                              onClick={() => setCurrentPage(page)}
-                              aria-current={page === currentPage ? 'page' : undefined}
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        )
-                      }
-                      if ((page === currentPage - 2 && page > 1) || (page === currentPage + 2 && page < totalPages)) {
-                        return (
-                          <PaginationItem key={`ellipsis-${page}`}>
-                            <PaginationEllipsis />
-                          </PaginationItem>
-                        )
-                      }
-                      return null
-                    })}
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                        aria-disabled={currentPage === totalPages}
-                        tabIndex={currentPage === totalPages ? -1 : 0}
-                        style={{
-                          pointerEvents: currentPage === totalPages ? 'none' : undefined,
-                          opacity: currentPage === totalPages ? 0.5 : 1,
-                        }}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
+
+            <PaginationSection currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
           </CardContent>
         </Card>
 
