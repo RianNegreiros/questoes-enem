@@ -25,16 +25,15 @@ export default function QuestionPage() {
         const [year, index] = (params.id as string).split('-')
         const questionData = await getQuestionById(year, index)
         let userAnswer: UserAnswer | undefined = undefined
-        if (session) {
-          const userAnswers = await getUserAnswers()
-          const questionId = `${questionData.year}-${questionData.index}`
-          if (userAnswers[questionId]) {
-            userAnswer = userAnswers[questionId]
-          }
+
+        const userAnswers = await getUserAnswers()
+        const questionId = `${questionData.year}-${questionData.index}`
+        if (userAnswers[questionId]) {
+          userAnswer = userAnswers[questionId]
         }
+
         setData({ question: questionData, userAnswer })
       } catch (error) {
-        console.error('Failed to load question:', error)
       } finally {
         setIsLoading(false)
       }

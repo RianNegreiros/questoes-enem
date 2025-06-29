@@ -37,8 +37,7 @@ export async function getExams() {
     }
     return response.json()
   } catch (error) {
-    console.error('Error fetching exams:', error)
-    throw error
+    throw new Error('Falha ao buscar exames')
   }
 }
 
@@ -71,8 +70,7 @@ export async function getQuestions(
     }
     return response.json()
   } catch (error) {
-    console.error('Error fetching questions:', error)
-    throw error
+    throw new Error('Falha ao buscar questões')
   }
 }
 
@@ -84,9 +82,7 @@ export async function getQuestionById(year: string, index: string) {
     }
     return response.json()
   } catch (error) {
-    console.error('Error fetching question:', error)
-    console.error(`Failed to load question ${year}, ${index}:`, error)
-    throw error
+    throw new Error('Falha ao buscar questão')
   }
 }
 
@@ -113,7 +109,6 @@ export async function getQuestionsByIndices(year: string, indices: number[]) {
     }
     return response.json()
   } catch (error) {
-    console.error('Error fetching questions by indices:', error)
-    throw error
+    throw new Error('Falha ao buscar questões por índices')
   }
 }

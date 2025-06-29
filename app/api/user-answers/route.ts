@@ -3,19 +3,34 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import prisma from '@/lib/prisma'
 
+const ERROR_MESSAGES = {
+  UNAUTHORIZED: 'Não autorizado',
+  MISSING_FIELDS: 'Campos obrigatórios ausentes',
+  INTERNAL_ERROR: 'Erro interno do servidor',
+} as const
+
+const createErrorResponse = (message: string, status: number) => NextResponse.json({ error: message }, { status })
+
+const validateSession = async (request: NextRequest) => {
+  const session = await auth.api.getSession({ headers: request.headers })
+  if (!session) {
+    throw new Error(ERROR_MESSAGES.UNAUTHORIZED)
+  }
+  return session
+}
+
+const validateRequiredFields = (data: any) => {
+  const { questionId, answerIndex, isCorrect } = data
+  if (!questionId || answerIndex === undefined || isCorrect === undefined) {
+    throw new Error(ERROR_MESSAGES.MISSING_FIELDS)
+  }
+  return { questionId, answerIndex, isCorrect }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers })
-
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const { questionId, answerIndex, isCorrect } = await request.json()
-
-    if (!questionId || answerIndex === undefined || isCorrect === undefined) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
+    const session = await validateSession(request)
+    const { questionId, answerIndex, isCorrect } = validateRequiredFields(await request.json())
 
     const userAnswer = await prisma.userAnswer.upsert({
       where: {
@@ -39,23 +54,25 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(userAnswer)
   } catch (error) {
-    console.error('Error saving user answer:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    if (error instanceof Error) {
+      if (error.message === ERROR_MESSAGES.UNAUTHORIZED) {
+        return createErrorResponse(ERROR_MESSAGES.UNAUTHORIZED, 401)
+      }
+      if (error.message === ERROR_MESSAGES.MISSING_FIELDS) {
+        return createErrorResponse(ERROR_MESSAGES.MISSING_FIELDS, 400)
+      }
+    }
+
+    return createErrorResponse(ERROR_MESSAGES.INTERNAL_ERROR, 500)
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers })
-
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const session = await validateSession(request)
 
     const userAnswers = await prisma.userAnswer.findMany({
-      where: {
-        userId: session.user.id,
-      },
+      where: { userId: session.user.id },
       select: {
         questionId: true,
         answerIndex: true,
@@ -64,18 +81,24 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    const answersMap: Record<string, { answerIndex: number; isCorrect: boolean; answeredAt: Date }> = {}
-    userAnswers.forEach((answer) => {
-      answersMap[answer.questionId] = {
-        answerIndex: answer.answerIndex,
-        isCorrect: answer.isCorrect,
-        answeredAt: answer.updatedAt,
-      }
-    })
+    const answersMap = userAnswers.reduce(
+      (acc, answer) => {
+        acc[answer.questionId] = {
+          answerIndex: answer.answerIndex,
+          isCorrect: answer.isCorrect,
+          answeredAt: answer.updatedAt,
+        }
+        return acc
+      },
+      {} as Record<string, { answerIndex: number; isCorrect: boolean; answeredAt: Date }>
+    )
 
     return NextResponse.json(answersMap)
   } catch (error) {
-    console.error('Error fetching user answers:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    if (error instanceof Error && error.message === ERROR_MESSAGES.UNAUTHORIZED) {
+      return createErrorResponse(ERROR_MESSAGES.UNAUTHORIZED, 401)
+    }
+
+    return createErrorResponse(ERROR_MESSAGES.INTERNAL_ERROR, 500)
   }
 }

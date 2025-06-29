@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { BookOpen, CheckCircle, Filter, TrendingUp, XCircle } from 'lucide-react'
 import useSWRImmutable from 'swr/immutable'
 
-import { getQuestionsByIndices, useExams } from '@/app/services/enem-api'
+import { getQuestionsByIndices, useExamByYear, useExams } from '@/app/services/enem-api'
 import { getUserAnswers, type UserAnswer } from '@/app/services/user-answers'
 import type { Discipline, Exam } from '@/app/types/exam'
 import type { Question } from '@/app/types/question'
@@ -33,10 +33,17 @@ interface QuestionWithAnswer extends Question {
 
 function useDebounce<T>(value: T, delay: number) {
   const [debouncedValue, setDebouncedValue] = useState(value)
+
   useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay)
-    return () => clearTimeout(handler)
+    const handler = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => {
+      clearTimeout(handler)
+    }
   }, [value, delay])
+
   return debouncedValue
 }
 
@@ -44,16 +51,13 @@ function useUserAnswers() {
   const [userAnswers, setUserAnswers] = useState<Record<string, UserAnswer>>({})
   const [answeredQuestionIds, setAnsweredQuestionIds] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const router = useRouter()
   const { data: session, isPending } = authClient.useSession()
 
   useEffect(() => {
     async function loadUserAnswers() {
       if (isPending) return
-      if (!session) {
-        router.push('/login')
-        return
-      }
+
+      if (!session) return
 
       setIsLoading(true)
       try {
@@ -61,7 +65,6 @@ function useUserAnswers() {
         setUserAnswers(answers)
         setAnsweredQuestionIds(Object.keys(answers))
       } catch (error) {
-        console.error(error)
         setUserAnswers({})
         setAnsweredQuestionIds([])
       } finally {
@@ -69,15 +72,19 @@ function useUserAnswers() {
       }
     }
     loadUserAnswers()
-  }, [session, isPending, router])
+  }, [session, isPending])
 
-  return { userAnswers, answeredQuestionIds, isLoading, isPending }
+  return { userAnswers, answeredQuestionIds, isLoading, isPending, session }
 }
 
 function useQuestionsData(answeredQuestionIds: string[], userAnswers: Record<string, UserAnswer>) {
   return useSWRImmutable(
     answeredQuestionIds.length > 0 ? ['questions-history', ...answeredQuestionIds] : null,
     async () => {
+      if (answeredQuestionIds.length === 0) {
+        return []
+      }
+
       const yearToIndices = answeredQuestionIds.reduce(
         (acc, questionId) => {
           const [year, index] = questionId.split('-')
@@ -101,7 +108,7 @@ function useQuestionsData(answeredQuestionIds: string[], userAnswers: Record<str
               }))
             )
           }
-        } catch {}
+        } catch { }
       }
 
       return allQuestions
@@ -117,14 +124,14 @@ function useDisciplines(): Discipline[] {
 
   return examsData
     ? Array.from(
-        examsData
-          .flatMap((exam: Exam) => exam.disciplines)
-          .reduce(
-            (map: Map<string, Discipline>, discipline: Discipline) => map.set(discipline.value, discipline),
-            new Map<string, Discipline>()
-          )
-          .values()
-      )
+      examsData
+        .flatMap((exam: Exam) => exam.disciplines)
+        .reduce(
+          (map: Map<string, Discipline>, discipline: Discipline) => map.set(discipline.value, discipline),
+          new Map<string, Discipline>()
+        )
+        .values()
+    )
     : []
 }
 
@@ -363,7 +370,7 @@ export default function QuestionsHistory() {
     setCurrentPage(1)
   }, [selectedStatus, selectedDiscipline])
 
-  if (isLoading || isQuestionsLoading || !questionsData || isPending) {
+  if (isLoading || isQuestionsLoading || isPending) {
     return <LoadingSkeleton />
   }
 
@@ -397,7 +404,11 @@ export default function QuestionsHistory() {
               {paginatedQuestions.length === 0 && (
                 <div className="py-8 text-center text-muted-foreground">
                   <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Nenhuma questão encontrada com os filtros aplicados.</p>
+                  <p>
+                    {answeredQuestionIds.length === 0
+                      ? 'Você ainda não respondeu nenhuma questão. Comece a praticar para ver seu histórico aqui!'
+                      : 'Nenhuma questão encontrada com os filtros aplicados.'}
+                  </p>
                 </div>
               )}
             </div>
