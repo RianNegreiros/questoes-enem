@@ -1,85 +1,70 @@
 # Questões ENEM
 
-Aplicação web para praticar questões do ENEM e acompanhar o histórico de respostas do usuário.
+Aplicação web para praticar questões do ENEM com histórico de respostas.
 
 ## Funcionalidades
 
-- Responder questões do ENEM por ano e disciplina
+- Questões do ENEM organizadas por ano e disciplina
 - Histórico de respostas com filtros
-- Autenticação via Google ou email com One-Time Password (OTP)
+- Autenticação via Google ou email (OTP)
 - Progresso salvo por usuário
 
 ## Tecnologias
 
-- Next.js
-- TypeScript
-- Tailwind CSS
-- Prisma ORM
-- PostgreSQL
-- Better Auth (autenticação)
-- Resend (envio de emails)
-
-## Pré-requisitos
-
-- Node.js >= 18.x
-- Docker (opcional)
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes, Prisma ORM, PostgreSQL
+- **Autenticação**: Better Auth
+- **Email**: Resend
 
 ## Instalação
 
 1. Clone o repositório:
+
    ```bash
    git clone https://github.com/riannegreiros/questoes-enem.git
    cd questoes-enem
    ```
+
 2. Instale as dependências:
+
    ```bash
    npm install
    ```
 
-## Configuração
+3. Configure as variáveis de ambiente:
 
-Crie um arquivo `.env.local` na raiz do projeto com o seguinte conteúdo:
+   ```bash
+   cp .env.example .env.local
+   ```
+
+4. Configure o banco de dados:
+
+   ```bash
+   npx prisma db push
+   ```
+
+5. Execute o projeto:
+   ```bash
+   npm run dev
+   ```
+
+## Variáveis de Ambiente
+
+Crie um arquivo `.env.local` com:
 
 ```env
-NEXT_PUBLIC_API_URL=https://api.enem.dev/v1
 DATABASE_URL="postgresql://postgres:postgres@db:5432/questoes_enem_dev"
-BETTER_AUTH_SECRET=
+BETTER_AUTH_SECRET=your_secret_here
 BETTER_AUTH_URL=http://localhost:3000
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-RESEND_API_KEY=
-RESEND_DOMAIN=
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+RESEND_API_KEY=your_resend_api_key
+RESEND_DOMAIN=your_domain.com
 ```
 
-Consulte a documentação dos serviços para obter as credenciais:
+## Docker
 
-- Better Auth: https://www.better-auth.com/docs/installation#set-environment-variables
-- Google: https://www.better-auth.com/docs/authentication/google#get-your-google-credentials
-- Resend: https://resend.com/docs/dashboard/api-keys/introduction
-
-## Banco de Dados
-
-Sincronize o banco de dados localmente:
-
-```bash
-npx prisma db push
-```
-
-Para produção, use:
-
-```bash
-npx prisma migrate deploy
-```
-
-## Uso
-
-### Desenvolvimento
-
-```bash
-npm run dev
-```
-
-### Docker
+Para executar com Docker:
 
 ```bash
 docker compose up -d
@@ -87,10 +72,6 @@ docker compose up -d
 
 Acesse em `http://localhost:3000`
 
-## API de Questões
+## API
 
-A aplicação consome a API do repositório `https://github.com/RianNegreiros/enem-api.git` para buscar provas e questões do ENEM. [Documentação Original](https://docs.enem.dev/introduction) (Sem filtro de questões por disciplina)
-
-## Agradecimento
-
-Esta aplicação utiliza uma API baseada em um fork do repositório [yunger7/enem-api](https://github.com/yunger7/enem-api), com a adição de um endpoint para buscar questões por disciplina.
+A aplicação consome a API do repositório [enem-api](https://github.com/RianNegreiros/enem-api.git) para buscar provas e questões do ENEM.
