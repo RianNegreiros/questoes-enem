@@ -7,6 +7,7 @@ import { useTheme } from 'next-themes'
 import { toast } from 'sonner'
 
 import { useExamByYear, useExams, useQuestions } from '@/app/services/enem-api'
+import { clearLocalAnswers } from '@/app/services/local-answers'
 import { getUserAnswers, type UserAnswer } from '@/app/services/user-answers'
 import type { Discipline, Exam } from '@/app/types/exam'
 import type { Question } from '@/app/types/question'
@@ -23,6 +24,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { authClient } from '@/lib/auth-client'
+import PrivacyBanner from './privacy-banner'
 
 const QUESTIONS_PER_PAGE = 10
 
@@ -57,14 +59,11 @@ export default function HomeClient() {
 
   useEffect(() => {
     async function loadUserAnswers() {
-      if (session) {
-        try {
-          const answers = await getUserAnswers()
-          setUserAnswers(answers)
-        } catch (error) {
-          setError('Failed to load saved answers.')
-          console.error('Failed to load saved answers:', error)
-        }
+      try {
+        const answers = await getUserAnswers()
+        setUserAnswers(answers)
+      } catch (error) {
+        setError('Falha ao carregar respostas salvas.')
       }
     }
     loadUserAnswers()
@@ -75,8 +74,9 @@ export default function HomeClient() {
       fetchOptions: {
         onSuccess: () => {
           setUserAnswers({})
+          clearLocalAnswers()
           router.refresh()
-          toast.success('Saiu da conta com successo')
+          toast.success('Saiu da conta com sucesso')
         },
       },
     })
@@ -274,6 +274,7 @@ export default function HomeClient() {
           )}
         </div>
       </div>
+      <PrivacyBanner />
     </div>
   )
 }

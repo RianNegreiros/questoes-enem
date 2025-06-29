@@ -1,6 +1,7 @@
 'use client'
 
 import { Share2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 
@@ -18,7 +19,12 @@ export function ShareButton({ url, title }: ShareButtonProps) {
           url: url,
         })
       } catch (error) {
-        console.error('Error sharing:', error)
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(url)
+          toast.success('Link copiado para a área de transferência!')
+        } else {
+          toast.error('Não foi possível compartilhar o link')
+        }
       }
     } else {
       navigator.clipboard.writeText(url)
