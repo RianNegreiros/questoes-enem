@@ -64,7 +64,6 @@ export default function HomeClient() {
         setUserAnswers(answers)
       } catch (error) {
         setError('Falha ao carregar respostas salvas.')
-        console.error('Failed to load saved answers:', error)
       }
     }
     loadUserAnswers()
