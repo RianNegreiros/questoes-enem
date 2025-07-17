@@ -64,7 +64,7 @@ function useUserAnswers() {
         const answers = await getUserAnswers()
         setUserAnswers(answers)
         setAnsweredQuestionIds(Object.keys(answers))
-      } catch (error) {
+      } catch {
         setUserAnswers({})
         setAnsweredQuestionIds([])
       } finally {
@@ -108,7 +108,7 @@ function useQuestionsData(answeredQuestionIds: string[], userAnswers: Record<str
               }))
             )
           }
-        } catch { }
+        } catch {}
       }
 
       return allQuestions
@@ -124,14 +124,14 @@ function useDisciplines(): Discipline[] {
 
   return examsData
     ? Array.from(
-      examsData
-        .flatMap((exam: Exam) => exam.disciplines)
-        .reduce(
-          (map: Map<string, Discipline>, discipline: Discipline) => map.set(discipline.value, discipline),
-          new Map<string, Discipline>()
-        )
-        .values()
-    )
+        examsData
+          .flatMap((exam: Exam) => exam.disciplines)
+          .reduce(
+            (map: Map<string, Discipline>, discipline: Discipline) => map.set(discipline.value, discipline),
+            new Map<string, Discipline>()
+          )
+          .values()
+      )
     : []
 }
 
